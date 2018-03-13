@@ -41,6 +41,9 @@ namespace Converter.Model
             JsonSerializerSettings settings = new JsonSerializerSettings();
             settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
 
+            // sort recordings
+            obj.Recordings = obj.Recordings.OrderBy(x => DateTime.Parse(x.Date)).ToList();
+
             // deserialize JSON directly from a file
             var jsonString = JsonConvert.SerializeObject(obj, Formatting.Indented, settings);
             File.WriteAllText(outputFile, jsonString);

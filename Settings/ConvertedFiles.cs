@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,6 +25,13 @@ namespace Converter.Settings
             {
                 Files = new List<string>()
             };
+        }
+
+        public static void SaveFiles(ConvertedFiles files)
+        {
+            // deserialize JSON directly from a file
+            var jsonString = JsonConvert.SerializeObject(files, Formatting.Indented);
+            File.WriteAllText("converted_files.json", jsonString);
         }
     }
 }

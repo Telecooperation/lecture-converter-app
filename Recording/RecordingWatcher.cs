@@ -24,11 +24,15 @@ namespace Converter.Recording
             if (fswDict.ContainsKey(folderName))
                 return;
 
+            // create a new file watcher
             var watcher = new FileSystemWatcher(folderName, "*.trec");
             watcher.Created += Watcher_Created;
             watcher.EnableRaisingEvents = true;
 
             fswDict.Add(folderName, watcher);
+
+            // do a folder scan
+            ScanFolder(folderName);
         }
 
         private void Watcher_Created(object sender, FileSystemEventArgs e)
@@ -37,8 +41,23 @@ namespace Converter.Recording
             if (!filePath.EndsWith(".trec"))
                 return;
 
-            logger.InfoFormat("New file detected: {0}", filePath);
+            ProcessFile(filePath);
+        }
 
+        private void ScanFolder(string folderName)
+        {
+            var files = Directory.EnumerateFiles(folderName);
+            foreach (var file in files)
+            {
+                if (file.EndsWith(".trec"))
+                {
+                    ProcessFile(file);
+                }
+            }
+        }
+
+        private void ProcessFile(string filePath)
+        {
             var fileName = Path.GetFileName(filePath);
             var folderName = Path.GetDirectoryName(filePath);
 
@@ -47,6 +66,8 @@ namespace Converter.Recording
 
             if (!processedFiles.Files.Contains(filePath.ToLower()))
             {
+                logger.InfoFormat("New file detected: {0}", filePath);
+
                 ProcessFile(fileName, folderName, filePath);
             }
         }
@@ -61,8 +82,12 @@ namespace Converter.Recording
             var targetFileName = settings.TargetFolders[index]
                 + "\\video\\" + fileName.Replace(".trec", ".mp4");
 
+            // create folders
+            Directory.CreateDirectory(settings.TargetFolders[index] + "\\video");
+            Directory.CreateDirectory(settings.TargetFolders[index] + "\\assets");
+
             // add new lecture entry
-            var lecture = Lecture.LoadSettings(settings.LectureNames[index], settings.TargetFolders[index] + "\\lecture.json");
+            var lecture = Lecture.LoadSettings(settings.LectureNames[index], settings.TargetFolders[index] + "\\assets\\lecture.json");
             var recording = new Model.Recording()
             {
                 Name = Utils.GetCleanTitleFromFileName(fileName),
@@ -71,7 +96,7 @@ namespace Converter.Recording
                 Processing = true
             };
             lecture.Recordings.Add(recording);
-            Lecture.SaveSettings(lecture, settings.TargetFolders[index] + "\\lecture.json");
+            Lecture.SaveSettings(lecture, settings.TargetFolders[index] + "\\assets\\lecture.json");
 
             // wait for file to finish copying
             logger.Info("Wait 60s for file to complete copy...");
@@ -83,7 +108,12 @@ namespace Converter.Recording
 
             // update to finished
             recording.Processing = false;
-            Lecture.SaveSettings(lecture, settings.TargetFolders[index] + "\\lecture.json");
+            Lecture.SaveSettings(lecture, settings.TargetFolders[index] + "\\assets\\lecture.json");
+
+            // mark file as processed
+            var processedFiles = ConvertedFiles.LoadFiles();
+            processedFiles.Files.Add(filePath);
+            ConvertedFiles.SaveFiles(processedFiles);
         }
     }
 }

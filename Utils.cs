@@ -18,11 +18,11 @@ namespace Converter
             {
                 if (date.Month < 10)
                 {
-                    return "Winter term " + date.Year + " / " + (date.Year + 1);
+                    return "Winter term " + (date.Year - 1) + " / " + date.Year;
                 }
                 else
                 {
-                    return "Winter term " + (date.Year - 1) + " / " + date.Year;
+                    return "Winter term " + date.Year + " / " + (date.Year + 1);
                 }
             }
         }
@@ -30,23 +30,26 @@ namespace Converter
         public static string GetCleanTitleFromFileName(string fileName)
         {
             string name = fileName.Replace(".mp4", "").Replace(".trec", "");
-            name = name.Replace("-", " ");
+            name = name.Replace("-", " ").Replace("_", " ");
 
             string[] splitName = name.Split(' ');
-            if(splitName[splitName.Length - 1].ToLower().Contains("ws") ||
-                splitName[splitName.Length - 1].ToLower().Contains("ss"))
+
+            string result = "";
+            for (int i = 0; i < splitName.Length; i++)
             {
-                name = "";
+                var part = splitName[i];
 
-                for(int i = 0; i < splitName.Length - 1; i++)
+                if (part.ToLower().StartsWith("ws") || part.ToLower().StartsWith("ss"))
                 {
-                    name += splitName[i] + " ";
+                    // ignore
                 }
-
-                name = name.Trim();
+                else
+                {
+                    result += part + " ";
+                }
             }
 
-            return name;
+            return result.Trim();
         }
     }
 }
