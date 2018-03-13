@@ -13,5 +13,7 @@ namespace Converter.Model
         public string Date { get; set; }
 
         public string FileName { get; set; }
+
+        public bool Processing { get; set; }
     }
 }

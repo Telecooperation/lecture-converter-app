@@ -1,6 +1,8 @@
 ﻿using Converter.Model;
 using Converter.Settings;
 using LectureRecordingConverter.Converter;
+using log4net;
+using log4net.Repository.Hierarchy;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +15,8 @@ namespace Converter.Recording
 {
     public class RecordingWatcher
     {
+        private static readonly ILog logger = LogManager.GetLogger(typeof(RecordingWatcher));
+
         private Dictionary<string, FileSystemWatcher> fswDict = new Dictionary<string, FileSystemWatcher>();
 
         public void AddWatcher(string folderName)
@@ -33,42 +37,53 @@ namespace Converter.Recording
             if (!filePath.EndsWith(".trec"))
                 return;
 
-            Console.WriteLine("New file detected: " + filePath);
+            logger.InfoFormat("New file detected: {0}", filePath);
 
             var fileName = Path.GetFileName(filePath);
             var folderName = Path.GetDirectoryName(filePath);
 
             // load processed files
             var processedFiles = ConvertedFiles.LoadFiles();
-            
-            if(!processedFiles.Files.Contains(filePath.ToLower()))
+
+            if (!processedFiles.Files.Contains(filePath.ToLower()))
             {
-                // original folder
-                var settings = Settings.Settings.LoadSettings();
-                var index = settings.SourceFolders.IndexOf(folderName);
-
-                // process file
-                var targetFileName = settings.TargetFolders[index]
-                    + "\\video\\" + fileName.Replace(".trec", ".mp4");
-
-                Console.WriteLine("Wait 60s for file to complete copy...");
-                Thread.Sleep(60000);
-
-                Console.WriteLine("Begin converting file: " + fileName);
-                RecordingConverter.ConvertRecording(filePath, targetFileName);
-                Console.WriteLine("Finished converting file:" + fileName);
-
-                // add new lecture entry
-                var lecture = Lecture.LoadSettings(settings.LectureNames[index], settings.TargetFolders[index] + "\\lecture.json");
-                lecture.Recordings.Add(new Model.Recording()
-                {
-                    Name = Utils.GetCleanTitleFromFileName(fileName),
-                    Date = File.GetCreationTime(filePath).ToShortDateString(),
-                    FileName = "./video/" + fileName.Replace(".trec", ".mp4")
-                });
-
-                Lecture.SaveSettings(lecture, settings.TargetFolders[index] + "\\lecture.json");
+                ProcessFile(fileName, folderName, filePath);
             }
+        }
+
+        private void ProcessFile(string fileName, string folderName, string filePath)
+        {
+            // original folder
+            var settings = Settings.Settings.LoadSettings();
+            var index = settings.SourceFolders.IndexOf(folderName);
+
+            // process file
+            var targetFileName = settings.TargetFolders[index]
+                + "\\video\\" + fileName.Replace(".trec", ".mp4");
+
+            // add new lecture entry
+            var lecture = Lecture.LoadSettings(settings.LectureNames[index], settings.TargetFolders[index] + "\\lecture.json");
+            var recording = new Model.Recording()
+            {
+                Name = Utils.GetCleanTitleFromFileName(fileName),
+                Date = File.GetCreationTime(filePath).ToShortDateString(),
+                FileName = "./video/" + fileName.Replace(".trec", ".mp4"),
+                Processing = true
+            };
+            lecture.Recordings.Add(recording);
+            Lecture.SaveSettings(lecture, settings.TargetFolders[index] + "\\lecture.json");
+
+            // wait for file to finish copying
+            logger.Info("Wait 60s for file to complete copy...");
+            Thread.Sleep(60000);
+
+            logger.InfoFormat("Begin converting file: {0}", fileName);
+            RecordingConverter.ConvertRecording(filePath, targetFileName);
+            logger.InfoFormat("Finished converting file: {0}", fileName);
+
+            // update to finished
+            recording.Processing = false;
+            Lecture.SaveSettings(lecture, settings.TargetFolders[index] + "\\lecture.json");
         }
     }
 }
