@@ -64,7 +64,7 @@ namespace Converter.Recording
             // load processed files
             var processedFiles = ConvertedFiles.LoadFiles();
 
-            if (!processedFiles.Files.Contains(filePath.ToLower()))
+            if (!processedFiles.Files.Contains(filePath))
             {
                 logger.InfoFormat("New file detected: {0}", filePath);
 
@@ -91,7 +91,7 @@ namespace Converter.Recording
             var recording = new Model.Recording()
             {
                 Name = Utils.GetCleanTitleFromFileName(fileName),
-                Date = File.GetCreationTime(filePath).ToShortDateString(),
+                Date = File.GetCreationTime(filePath),
                 FileName = "./video/" + fileName.Replace(".trec", ".mp4"),
                 Processing = true
             };
@@ -99,8 +99,8 @@ namespace Converter.Recording
             Lecture.SaveSettings(lecture, settings.TargetFolders[index] + "\\assets\\lecture.json");
 
             // wait for file to finish copying
-            logger.Info("Wait 60s for file to complete copy...");
-            Thread.Sleep(60000);
+            logger.Info("Wait 120s for file to complete copy...");
+            Thread.Sleep(120000);
 
             logger.InfoFormat("Begin converting file: {0}", fileName);
             RecordingConverter.ConvertRecording(filePath, targetFileName);

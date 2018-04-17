@@ -18,7 +18,7 @@ namespace LectureRecordingConverter.Converter
             arguments.Append("-i");
             arguments.Append(" ");
             arguments.Append("\"" + inputFileName + "\"");
-            arguments.Append(" -f mp4 -vcodec libx264 -preset ultrafast -profile:v main -pix_fmt yuv420p -acodec aac ");
+            arguments.Append(" -f mp4 -vcodec libx264 -tune stillimage -profile:v baseline -level 3.0 -pix_fmt yuv420p -acodec aac ");
             arguments.Append("\"" + outputFileName + "\"");
 
             // run ffmpeg
