@@ -91,7 +91,7 @@ namespace Converter.Recording
             var recording = new Model.Recording()
             {
                 Name = Utils.GetCleanTitleFromFileName(fileName),
-                Date = File.GetCreationTime(filePath),
+                Date = File.GetLastWriteTime(filePath),
                 FileName = "./video/" + fileName.Replace(".trec", ".mp4"),
                 Processing = true
             };
