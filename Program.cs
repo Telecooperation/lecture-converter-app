@@ -9,6 +9,8 @@ namespace Converter
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(Program));
 
+        private static RecordingConverter recordingConverter = new RecordingConverter();
+
         static void Main(string[] args)
         {
             BasicConfigurator.Configure();
@@ -18,7 +20,13 @@ namespace Converter
             // load settings
             var settings = Settings.Settings.LoadSettings();
 
+            // run recording queue
+            recordingConverter.RunConversionQueue();
+
+            // load watcher
             var watcher = new RecordingWatcher();
+            watcher.NewFileDetected += Watcher_NewFileDetected;
+
             for (int i = 0; i < settings.LectureNames.Count; i++)
             {
                 var sourceFolder = settings.SourceFolders[i];
@@ -30,6 +38,11 @@ namespace Converter
             logger.Info("Converter is running, and waiting for new files...");
             logger.Info("Press any key to close.");
             Console.ReadLine();
+        }
+
+        private static void Watcher_NewFileDetected(object sender, NewFileDetectedEventArgs e)
+        {
+            recordingConverter.AddFile(e.FileName);
         }
     }
 }

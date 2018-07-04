@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="Model\Lecture.cs" />
     <Compile Include="Model\Recording.cs" />
+    <Compile Include="Recording\NewFileDetectedEventArgs.cs" />
     <Compile Include="Recording\RecordingConverter.cs" />
     <Compile Include="Recording\RecordingWatcher.cs" />
     <Compile Include="Settings\ConvertedFiles.cs" />
