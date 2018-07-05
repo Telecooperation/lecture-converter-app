@@ -22,9 +22,15 @@ namespace Converter.Recording
 
         public void AddFile(string fileName)
         {
-            processingQueue.Add(fileName);
+            // load processed files
+            var processedFiles = ConvertedFiles.LoadFiles();
 
-            logger.InfoFormat("New file to convert queued: {0}", fileName);
+            if (!processedFiles.Files.Contains(fileName))
+            {
+                logger.InfoFormat("New file to convert queued: {0}", fileName);
+
+                processingQueue.Add(fileName);
+            }
         }
 
         public void RunConversionQueue()

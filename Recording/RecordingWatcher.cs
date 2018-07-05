@@ -44,12 +44,14 @@ namespace Converter.Recording
             }
         }
 
-        private static void NotAccessibleError(FileSystemWatcher source, ErrorEventArgs e)
+        private void NotAccessibleError(FileSystemWatcher source, ErrorEventArgs e)
         {
             source.EnableRaisingEvents = false;
+
             int iMaxAttempts = 120;
             int iTimeOut = 30000;
             int i = 0;
+
             while (source.EnableRaisingEvents == false && i < iMaxAttempts)
             {
                 i += 1;
@@ -64,6 +66,11 @@ namespace Converter.Recording
                 }
             }
 
+            // do a manual scan
+            foreach (var folderName in fswDict.Keys)
+            {
+                ScanFolder(folderName);
+            }
         }
 
         private void Watcher_Created(object sender, FileSystemEventArgs e)
@@ -77,13 +84,20 @@ namespace Converter.Recording
 
         private void ScanFolder(string folderName)
         {
-            var files = Directory.EnumerateFiles(folderName);
-            foreach (var file in files)
+            try
             {
-                if (file.EndsWith(".trec"))
+                var files = Directory.EnumerateFiles(folderName);
+                foreach (var file in files)
                 {
-                    OnNewFileDetected(new NewFileDetectedEventArgs() { FileName = file });
+                    if (file.EndsWith(".trec"))
+                    {
+                        OnNewFileDetected(new NewFileDetectedEventArgs() { FileName = file });
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                logger.Error("Could not crawl observed folder: " + folderName, ex);
             }
         }
 
