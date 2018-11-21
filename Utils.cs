@@ -30,7 +30,7 @@ namespace Converter
         public static string GetCleanTitleFromFileName(string fileName)
         {
             string name = fileName.Replace(".mp4", "").Replace(".trec", "");
-            name = name.Replace("-", " ").Replace("_", " ");
+            name = name.Replace("-", " ").Replace("_", " ").Replace("New", "").Replace("new", "").Replace("  ", " ");
 
             string[] splitName = name.Split(' ');
 
