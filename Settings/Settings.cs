@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Converter.Settings
+namespace ConverterCore.Settings
 {
     public class Settings
     {
@@ -19,7 +19,7 @@ namespace Converter.Settings
         public static Settings LoadSettings()
         {
             // deserialize JSON directly from a file
-            return JsonConvert.DeserializeObject<Settings>(File.ReadAllText("settings.json"));
+            return JsonConvert.DeserializeObject<Settings>(File.ReadAllText(Path.Combine("config", "settings.json")));
         }
     }
 }

@@ -1,24 +1,29 @@
-﻿using Converter;
-using Converter.Model;
-using Converter.Settings;
-using log4net;
+﻿using ConverterCore.Model;
+using ConverterCore.Settings;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Converter.Recording
+namespace ConverterCore.Recording
 {
     public class RecordingConverter
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(RecordingConverter));
+        private readonly ILogger<RecordingConverter> _logger;
 
         private BlockingCollection<String> processingQueue = new BlockingCollection<String>();
+
+        public RecordingConverter(ILogger<RecordingConverter> logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
 
         public void AddFile(string fileName)
         {
@@ -27,7 +32,7 @@ namespace Converter.Recording
 
             if (!processedFiles.Files.Contains(fileName))
             {
-                logger.InfoFormat("New file to convert queued: {0}", fileName);
+                _logger.LogInformation("New file to convert queued: {0}", fileName);
 
                 processingQueue.Add(fileName);
             }
@@ -45,7 +50,7 @@ namespace Converter.Recording
             th.Start();
         }
 
-        public static void ConvertRecording(string inputFileName, string outputFileName)
+        public void ConvertRecording(string inputFileName, string outputFileName)
         {
             var arguments = new StringBuilder();
             arguments.Append("-i");
@@ -55,14 +60,23 @@ namespace Converter.Recording
             arguments.Append("\"" + outputFileName + "\"");
 
             // run ffmpeg
-            var process = Process.Start("ffmpeg\\ffmpeg.exe", arguments.ToString());
-            process.OutputDataReceived += Process_OutputDataReceived;
-            process.WaitForExit();
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var process = Process.Start(Path.Combine("ffmpeg", "win", "ffmpeg"), arguments.ToString());
+                process.OutputDataReceived += Process_OutputDataReceived;
+                process.WaitForExit();
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                var process = Process.Start(Path.Combine("ffmpeg", "unix", "ffmpeg"), arguments.ToString());
+                process.OutputDataReceived += Process_OutputDataReceived;
+                process.WaitForExit();
+            }
         }
 
-        private static void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            logger.Debug(e.Data);
+            _logger.LogDebug(e.Data);
         }
 
         private void ProcessFile(string filePath)
@@ -86,16 +100,15 @@ namespace Converter.Recording
             var index = settings.SourceFolders.IndexOf(folderName);
 
             // process file
-            var targetFileName = settings.TargetFolders[index]
-                + "\\video\\" + fileName.Replace(".trec", ".mp4");
+            var targetFileName = Path.Combine(settings.TargetFolders[index], "video", fileName.Replace(".trec", ".mp4"));
 
             // create folders
-            Directory.CreateDirectory(settings.TargetFolders[index] + "\\video");
-            Directory.CreateDirectory(settings.TargetFolders[index] + "\\assets");
+            Directory.CreateDirectory(Path.Combine(settings.TargetFolders[index], "video"));
+            Directory.CreateDirectory(Path.Combine(settings.TargetFolders[index], "assets"));
 
             // add new lecture entry
-            var lecture = Lecture.LoadSettings(settings.LectureNames[index], settings.TargetFolders[index] + "\\assets\\lecture.json");
-            var recording = new Converter.Model.Recording()
+            var lecture = Lecture.LoadSettings(settings.LectureNames[index], Path.Combine(settings.TargetFolders[index], "assets", "lecture.json"));
+            var recording = new Model.Recording()
             {
                 Name = Utils.GetCleanTitleFromFileName(fileName),
                 Date = File.GetLastWriteTime(filePath),
@@ -103,19 +116,20 @@ namespace Converter.Recording
                 Processing = true
             };
             lecture.Recordings.Add(recording);
-            Lecture.SaveSettings(lecture, settings.TargetFolders[index] + "\\assets\\lecture.json");
+            Lecture.SaveSettings(lecture, Path.Combine(settings.TargetFolders[index], "assets", "lecture.json"));
 
             // wait for file to finish copying
-            logger.Info("Wait 120s for file to complete copy...");
+            _logger.LogInformation("Wait 120s for file to complete copy...");
             Thread.Sleep(120000);
 
-            logger.InfoFormat("Begin converting file: {0}", fileName);
-            RecordingConverter.ConvertRecording(filePath, targetFileName);
-            logger.InfoFormat("Finished converting file: {0}", fileName);
+            _logger.LogInformation("Begin converting file: {0}", fileName);
+            ConvertRecording(filePath, targetFileName);
+            _logger.LogInformation("Finished converting file: {0}", fileName);
 
             // update to finished
             recording.Processing = false;
-            Lecture.SaveSettings(lecture, settings.TargetFolders[index] + "\\assets\\lecture.json");
+            recording.Date = File.GetLastWriteTime(filePath);
+            Lecture.SaveSettings(lecture, Path.Combine(settings.TargetFolders[index], "assets", "lecture.json"));
 
             // mark file as processed
             var processedFiles = ConvertedFiles.LoadFiles();

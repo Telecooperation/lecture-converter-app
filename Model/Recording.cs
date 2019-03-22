@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Converter.Model
+namespace ConverterCore.Model
 {
     public class Recording
     {

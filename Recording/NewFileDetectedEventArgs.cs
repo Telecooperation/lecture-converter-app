@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Converter.Recording
+namespace ConverterCore.Recording
 {
     public class NewFileDetectedEventArgs : EventArgs
     {

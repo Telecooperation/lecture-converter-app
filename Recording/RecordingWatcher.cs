@@ -1,17 +1,22 @@
-﻿using log4net;
+﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Converter.Recording
+namespace ConverterCore.Recording
 {
     public class RecordingWatcher
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(RecordingWatcher));
+        private readonly ILogger<RecordingWatcher> _logger;
 
         private Dictionary<string, FileSystemWatcher> fswDict = new Dictionary<string, FileSystemWatcher>();
 
         public event EventHandler<NewFileDetectedEventArgs> NewFileDetected;
+
+        public RecordingWatcher(ILogger<RecordingWatcher> logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
 
         public void AddWatcher(string folderName)
         {
@@ -32,7 +37,7 @@ namespace Converter.Recording
 
         private void Watcher_Error(object sender, ErrorEventArgs e)
         {
-            logger.Error("File watcher raised an error.", e.GetException());
+            _logger.LogError(e.GetException(), "File watcher raised an error.");
 
             try
             {
@@ -40,7 +45,7 @@ namespace Converter.Recording
             }
             catch (Exception ex)
             {
-                logger.Error("Could not restart file system watcher.", ex);
+                _logger.LogError(ex, "Could not restart file system watcher.");
             }
         }
 
@@ -97,7 +102,7 @@ namespace Converter.Recording
             }
             catch (Exception ex)
             {
-                logger.Error("Could not crawl observed folder: " + folderName, ex);
+                _logger.LogError(ex, "Could not crawl observed folder: " + folderName);
             }
         }
 
