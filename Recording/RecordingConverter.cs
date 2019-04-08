@@ -18,7 +18,7 @@ namespace ConverterCore.Recording
     {
         private readonly ILogger<RecordingConverter> _logger;
 
-        private BlockingCollection<String> processingQueue = new BlockingCollection<String>();
+        private BlockingCollection<string> processingQueue = new BlockingCollection<string>();
 
         public RecordingConverter(ILogger<RecordingConverter> logger)
         {
@@ -30,7 +30,7 @@ namespace ConverterCore.Recording
             // load processed files
             var processedFiles = ConvertedFiles.LoadFiles();
 
-            if (!processedFiles.Files.Contains(fileName))
+            if (!processedFiles.Files.Contains(fileName) && !processingQueue.Contains(fileName))
             {
                 _logger.LogInformation("New file to convert queued: {0}", fileName);
 

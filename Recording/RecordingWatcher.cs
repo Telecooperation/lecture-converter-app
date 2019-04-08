@@ -1,7 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace ConverterCore.Recording
 {
@@ -10,6 +13,7 @@ namespace ConverterCore.Recording
         private readonly ILogger<RecordingWatcher> _logger;
 
         private Dictionary<string, FileSystemWatcher> fswDict = new Dictionary<string, FileSystemWatcher>();
+        private Dictionary<string, Timer> tDict = new Dictionary<string, Timer>();
 
         public event EventHandler<NewFileDetectedEventArgs> NewFileDetected;
 
@@ -20,16 +24,26 @@ namespace ConverterCore.Recording
 
         public void AddWatcher(string folderName)
         {
-            if (fswDict.ContainsKey(folderName))
+            if (fswDict.ContainsKey(folderName) || tDict.ContainsKey(folderName))
                 return;
 
-            // create a new file watcher
-            var watcher = new FileSystemWatcher(folderName, "*.trec");
-            watcher.Created += Watcher_Created;
-            watcher.Error += Watcher_Error;
-            watcher.EnableRaisingEvents = true;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // create a new file watcher
+                var watcher = new FileSystemWatcher(folderName, "*.trec");
+                watcher.Created += Watcher_Created;
+                watcher.Changed += Watcher_Created;
+                watcher.Error += Watcher_Error;
+                watcher.EnableRaisingEvents = true;
 
-            fswDict.Add(folderName, watcher);
+                fswDict.Add(folderName, watcher);
+            }
+            else
+            {
+                // do scanning the folder every now and then
+                var bgTask = new Timer(x => ScanFolder(folderName), null, TimeSpan.Zero, TimeSpan.FromMinutes(5));
+                tDict.Add(folderName, bgTask);
+            }
 
             // do a folder scan
             ScanFolder(folderName);
