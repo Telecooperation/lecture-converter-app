@@ -1,5 +1,14 @@
 ﻿{
-  "SourceFolders": [],
-  "TargetFolders": [],
-  "LectureNames": []
+  "LectureNames": [
+    "Computer Netzwerke und verteilte Systeme",
+    "TK3 - Ubiquitous / Mobile Computing"
+  ],
+  "SourceFolders": [
+    "\\\\FILESERVER\\teaching\\TK-Lectures\\Recordings\\CNuvS\\SoSe19",
+    "\\\\FILESERVER\\teaching\\TK-Lectures\\Recordings\\TK3\\SoSe19"
+  ],
+  "TargetFolders": [
+    "\\\\FILESERVER\\public_www\\LectureRecordings\\CNuvS\\SoSe19",
+    "\\\\FILESERVER\\public_www\\LectureRecordings\\TK3\\SoSe19"
+  ]
 }

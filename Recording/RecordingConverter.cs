@@ -19,6 +19,7 @@ namespace ConverterCore.Recording
         private readonly ILogger<RecordingConverter> _logger;
 
         private BlockingCollection<string> processingQueue = new BlockingCollection<string>();
+        private List<string> currentProcessing = new List<string>();
 
         public RecordingConverter(ILogger<RecordingConverter> logger)
         {
@@ -27,15 +28,10 @@ namespace ConverterCore.Recording
 
         public void AddFile(string fileName)
         {
-            // load processed files
-            var processedFiles = ConvertedFiles.LoadFiles();
+            _logger.LogInformation("New file to convert queued: {0}", fileName);
 
-            if (!processedFiles.Files.Contains(fileName) && !processingQueue.Contains(fileName))
-            {
-                _logger.LogInformation("New file to convert queued: {0}", fileName);
-
+            if (!processingQueue.Contains(fileName) && !currentProcessing.Contains(fileName))
                 processingQueue.Add(fileName);
-            }
         }
 
         public void RunConversionQueue()
@@ -44,6 +40,8 @@ namespace ConverterCore.Recording
             {
                 foreach (var fileName in processingQueue.GetConsumingEnumerable())
                 {
+                    currentProcessing.Add(fileName);
+
                     ProcessFile(fileName);
                 }
             });
@@ -84,13 +82,24 @@ namespace ConverterCore.Recording
             var fileName = Path.GetFileName(filePath);
             var folderName = Path.GetDirectoryName(filePath);
 
-            // load processed files
-            var processedFiles = ConvertedFiles.LoadFiles();
-
-            if (!processedFiles.Files.Contains(filePath))
+            // convert file?
+            if (ShouldConvert(fileName, folderName))
             {
+                _logger.LogInformation("Convert file: {0}", fileName);
                 ProcessFile(fileName, folderName, filePath);
             }
+        }
+
+        private bool ShouldConvert(string fileName, string folderName)
+        {
+            // original folder
+            var settings = Settings.Settings.LoadSettings();
+            var index = settings.SourceFolders.IndexOf(folderName);
+
+            // process file
+            var targetFileName = Path.Combine(settings.TargetFolders[index], "video", fileName.Replace(".trec", ".mp4"));
+
+            return !File.Exists(targetFileName);
         }
 
         private void ProcessFile(string fileName, string folderName, string filePath)
@@ -131,10 +140,8 @@ namespace ConverterCore.Recording
             recording.Date = File.GetLastWriteTime(filePath);
             Lecture.SaveSettings(lecture, Path.Combine(settings.TargetFolders[index], "assets", "lecture.json"));
 
-            // mark file as processed
-            var processedFiles = ConvertedFiles.LoadFiles();
-            processedFiles.Files.Add(filePath);
-            ConvertedFiles.SaveFiles(processedFiles);
+            // delete from processing queue
+            currentProcessing.Remove(fileName);
         }
     }
 }
