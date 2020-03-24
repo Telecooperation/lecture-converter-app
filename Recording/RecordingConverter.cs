@@ -102,14 +102,14 @@ namespace ConverterCore.Recording
             return !File.Exists(targetFileName);
         }
 
-        private void ProcessFile(string fileName, string folderName, string filePath)
+        private void ProcessFile(string inputFileName, string inputFolderPath, string inputFilePath)
         {
             // original folder
             var settings = Settings.Settings.LoadSettings();
-            var index = settings.SourceFolders.IndexOf(folderName);
+            var index = settings.SourceFolders.IndexOf(inputFolderPath);
 
             // process file
-            var targetFileName = Path.Combine(settings.TargetFolders[index], "video", fileName.Replace(".trec", ".mp4"));
+            var targetFilePath = Path.Combine(settings.TargetFolders[index], "video", inputFileName.Replace(".trec", ".mp4"));
 
             // create folders
             Directory.CreateDirectory(Path.Combine(settings.TargetFolders[index], "video"));
@@ -119,9 +119,9 @@ namespace ConverterCore.Recording
             var lecture = Lecture.LoadSettings(settings.LectureNames[index], Path.Combine(settings.TargetFolders[index], "assets", "lecture.json"));
             var recording = new Model.Recording()
             {
-                Name = Utils.GetCleanTitleFromFileName(fileName),
-                Date = File.GetLastWriteTime(filePath),
-                FileName = "./video/" + fileName.Replace(".trec", ".mp4"),
+                Name = Utils.GetCleanTitleFromFileName(inputFileName),
+                Date = File.GetLastWriteTime(inputFilePath),
+                FileName = "./video/" + inputFileName.Replace(".trec", ".mp4"),
                 Processing = true
             };
             lecture.Recordings.Add(recording);
@@ -131,17 +131,17 @@ namespace ConverterCore.Recording
             _logger.LogInformation("Wait 120s for file to complete copy...");
             Thread.Sleep(120000);
 
-            _logger.LogInformation("Begin converting file: {0}", fileName);
-            ConvertRecording(filePath, targetFileName);
-            _logger.LogInformation("Finished converting file: {0}", fileName);
+            _logger.LogInformation("Begin converting file: {0}", inputFileName);
+            ConvertRecording(inputFilePath, targetFilePath);
+            _logger.LogInformation("Finished converting file: {0}", inputFileName);
 
             // update to finished
             recording.Processing = false;
-            recording.Date = File.GetLastWriteTime(filePath);
+            recording.Date = File.GetLastWriteTime(inputFilePath);
             Lecture.SaveSettings(lecture, Path.Combine(settings.TargetFolders[index], "assets", "lecture.json"));
 
             // delete from processing queue
-            currentProcessing.Remove(fileName);
+            currentProcessing.Remove(inputFileName);
         }
     }
 }
