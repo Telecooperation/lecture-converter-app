@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ConverterCore.Settings;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,5 +10,7 @@ namespace ConverterCore.Recording
     public class NewFileDetectedEventArgs : EventArgs
     {
         public string FileName { get; set; }
+
+        public Course Course { get; set; }
     }
 }

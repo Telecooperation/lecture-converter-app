@@ -1,4 +1,5 @@
 ﻿using ConverterCore.Recording;
+using ConverterCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
@@ -30,8 +31,9 @@ namespace ConverterCore
             );
 
             // add services
+            services.AddTransient<FFMpegConvertService, FFMpegConvertService>();
             services.AddTransient<RecordingConverter, RecordingConverter>();
-            services.AddTransient<RecordingWatcher, RecordingWatcher>();
+            services.AddTransient<CourseWatcher, CourseWatcher>();
 
             // add app
             services.AddTransient<App>();

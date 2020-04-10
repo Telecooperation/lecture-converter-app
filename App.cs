@@ -1,6 +1,7 @@
 ﻿using ConverterCore.Recording;
 using Microsoft.Extensions.Logging;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace ConverterCore
@@ -11,9 +12,9 @@ namespace ConverterCore
 
         private RecordingConverter _recordingConverter;
 
-        private RecordingWatcher _recordingWatcher;
+        private CourseWatcher _recordingWatcher;
 
-        public App(ILogger<App> logger, RecordingConverter recordingConverter, RecordingWatcher recordingWatcher)
+        public App(ILogger<App> logger, RecordingConverter recordingConverter, CourseWatcher recordingWatcher)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _recordingConverter = recordingConverter ?? throw new ArgumentNullException(nameof(recordingConverter));
@@ -33,12 +34,15 @@ namespace ConverterCore
             // load watcher
             _recordingWatcher.NewFileDetected += Watcher_NewFileDetected;
 
-            for (int i = 0; i < settings.LectureNames.Count; i++)
+            foreach (var course in settings.Courses)
             {
-                var sourceFolder = settings.SourceFolders[i];
-                _recordingWatcher.AddWatcher(sourceFolder);
+                // create folders
+                Directory.CreateDirectory(Path.Combine(course.TargetFolder, "video"));
+                Directory.CreateDirectory(Path.Combine(course.TargetFolder, "assets"));
 
-                _logger.LogInformation("Observing: {0}", sourceFolder);
+                _recordingWatcher.AddWatcher(course);
+
+                _logger.LogInformation("Observing: {0}", course.SourceFolder);
             }
 
             _logger.LogInformation("Converter is running, and waiting for new files...");
@@ -47,7 +51,7 @@ namespace ConverterCore
 
         private void Watcher_NewFileDetected(object sender, NewFileDetectedEventArgs e)
         {
-            _recordingConverter.AddFile(e.FileName);
+            _recordingConverter.QueueFile(new QueuedFile() { FilePath = e.FileName, Course = e.Course });
         }
     }
 }

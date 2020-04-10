@@ -1,14 +1,10 @@
 ﻿{
-  "LectureNames": [
-    "Computer Netzwerke und verteilte Systeme",
-    "TK3 - Ubiquitous / Mobile Computing"
-  ],
-  "SourceFolders": [
-    "\\\\FILESERVER\\teaching\\TK-Lectures\\Recordings\\CNuvS\\SoSe19",
-    "\\\\FILESERVER\\teaching\\TK-Lectures\\Recordings\\TK3\\SoSe19"
-  ],
-  "TargetFolders": [
-    "\\\\FILESERVER\\public_www\\LectureRecordings\\CNuvS\\SoSe19",
-    "\\\\FILESERVER\\public_www\\LectureRecordings\\TK3\\SoSe19"
+  "Courses": [
+    {
+      "Id": "cnuvs_ss20",
+      "Name": "Computer Netzwerke und verteilte Systeme",
+      "SourceFolder": "D:\\Git\\LectureConverter\\source",
+      "TargetFolder": "D:\\Git\\LectureConverter\\target"
+    }
   ]
 }

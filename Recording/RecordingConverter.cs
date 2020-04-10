@@ -1,4 +1,5 @@
 ﻿using ConverterCore.Model;
+using ConverterCore.Services;
 using ConverterCore.Settings;
 using Microsoft.Extensions.Logging;
 using System;
@@ -18,130 +19,95 @@ namespace ConverterCore.Recording
     {
         private readonly ILogger<RecordingConverter> _logger;
 
-        private BlockingCollection<string> processingQueue = new BlockingCollection<string>();
-        private List<string> currentProcessing = new List<string>();
+        private BlockingCollection<QueuedFile> processingQueue = new BlockingCollection<QueuedFile>();
+        private List<QueuedFile> currentProcessing = new List<QueuedFile>();
 
-        public RecordingConverter(ILogger<RecordingConverter> logger)
+        public FFMpegConvertService ConvertService { get; }
+
+        public RecordingConverter(ILogger<RecordingConverter> logger,
+            FFMpegConvertService convertService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            ConvertService = convertService;
         }
 
-        public void AddFile(string fileName)
+        public void QueueFile(QueuedFile queuedFile)
         {
-            _logger.LogInformation("New file to convert queued: {0}", fileName);
+            _logger.LogInformation("New file to convert queued: {0}", queuedFile.FilePath);
 
-            if (!processingQueue.Contains(fileName) && !currentProcessing.Contains(fileName))
-                processingQueue.Add(fileName);
+            if (!processingQueue.Contains(queuedFile) && !currentProcessing.Contains(queuedFile))
+                processingQueue.Add(queuedFile);
         }
 
         public void RunConversionQueue()
         {
             var th = new Thread(() =>
             {
-                foreach (var fileName in processingQueue.GetConsumingEnumerable())
+                foreach (var queuedFile in processingQueue.GetConsumingEnumerable())
                 {
-                    currentProcessing.Add(fileName);
+                    currentProcessing.Add(queuedFile);
 
-                    ProcessFile(fileName);
+                    ProcessFile(queuedFile);
                 }
             });
             th.Start();
         }
 
-        public void ConvertRecording(string inputFileName, string outputFileName)
+        private bool ShouldConvert(QueuedFile queuedFile)
         {
-            var arguments = new StringBuilder();
-            arguments.Append("-i");
-            arguments.Append(" ");
-            arguments.Append("\"" + inputFileName + "\"");
-            arguments.Append(" -f mp4 -vcodec libx264 -tune stillimage -profile:v baseline -level 3.0 -pix_fmt yuv420p -acodec aac ");
-            arguments.Append("\"" + outputFileName + "\"");
+            // process file?
+            var targetFileName = Path.GetFileName(queuedFile.FilePath).Replace(".trec", ".mp4");
+            var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName);
 
-            // run ffmpeg
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                var process = Process.Start(Path.Combine("ffmpeg", "win", "ffmpeg"), arguments.ToString());
-                process.OutputDataReceived += Process_OutputDataReceived;
-                process.WaitForExit();
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                var process = Process.Start(Path.Combine("ffmpeg", "unix", "ffmpeg"), arguments.ToString());
-                process.OutputDataReceived += Process_OutputDataReceived;
-                process.WaitForExit();
-            }
+            return !File.Exists(targetFilePath);
         }
 
-        private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
+        private void ProcessFile(QueuedFile queuedFile)
         {
-            _logger.LogDebug(e.Data);
-        }
-
-        private void ProcessFile(string filePath)
-        {
-            var fileName = Path.GetFileName(filePath);
-            var folderName = Path.GetDirectoryName(filePath);
-
             // convert file?
-            if (ShouldConvert(fileName, folderName))
+            if (!ShouldConvert(queuedFile))
             {
-                _logger.LogInformation("Convert file: {0}", fileName);
-                ProcessFile(fileName, folderName, filePath);
+                _logger.LogInformation("Ignore file: {0}", queuedFile.FilePath);
+                return;
             }
-        }
 
-        private bool ShouldConvert(string fileName, string folderName)
-        {
-            // original folder
-            var settings = Settings.Settings.LoadSettings();
-            var index = settings.SourceFolders.IndexOf(folderName);
+            // convert
+            var inputFilePath = queuedFile.FilePath;
 
-            // process file
-            var targetFileName = Path.Combine(settings.TargetFolders[index], "video", fileName.Replace(".trec", ".mp4"));
-
-            return !File.Exists(targetFileName);
-        }
-
-        private void ProcessFile(string inputFileName, string inputFolderPath, string inputFilePath)
-        {
-            // original folder
-            var settings = Settings.Settings.LoadSettings();
-            var index = settings.SourceFolders.IndexOf(inputFolderPath);
-
-            // process file
-            var targetFilePath = Path.Combine(settings.TargetFolders[index], "video", inputFileName.Replace(".trec", ".mp4"));
-
-            // create folders
-            Directory.CreateDirectory(Path.Combine(settings.TargetFolders[index], "video"));
-            Directory.CreateDirectory(Path.Combine(settings.TargetFolders[index], "assets"));
+            var targetFileName = Path.GetFileName(queuedFile.FilePath).Replace(".trec", ".mp4");
+            var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName);
 
             // add new lecture entry
-            var lecture = Lecture.LoadSettings(settings.LectureNames[index], Path.Combine(settings.TargetFolders[index], "assets", "lecture.json"));
-            var recording = new Model.Recording()
-            {
-                Name = Utils.GetCleanTitleFromFileName(inputFileName),
-                Date = File.GetLastWriteTime(inputFilePath),
-                FileName = "./video/" + inputFileName.Replace(".trec", ".mp4"),
-                Processing = true
-            };
-            lecture.Recordings.Add(recording);
-            Lecture.SaveSettings(lecture, Path.Combine(settings.TargetFolders[index], "assets", "lecture.json"));
+            var lecture = Lecture.LoadSettings(queuedFile.Course);
+            var recording = lecture.Recordings.Where(x => x.Name == Utils.GetCleanTitleFromFileName(targetFileName)).SingleOrDefault();
+
+            if (recording == null) {
+                recording = new Model.Recording()
+                {
+                    Name = Utils.GetCleanTitleFromFileName(targetFileName),
+                    Date = File.GetLastWriteTime(inputFilePath),
+                    FileName = "./video/" + targetFileName,
+                    Processing = true
+                };
+                lecture.Recordings.Add(recording);
+                Lecture.SaveSettings(lecture, queuedFile.Course);
+            }
 
             // wait for file to finish copying
             _logger.LogInformation("Wait 120s for file to complete copy...");
             Thread.Sleep(120000);
 
-            _logger.LogInformation("Begin converting file: {0}", inputFileName);
-            ConvertRecording(inputFilePath, targetFilePath);
-            _logger.LogInformation("Finished converting file: {0}", inputFileName);
+            _logger.LogInformation("Begin converting file: {0}", inputFilePath);
+            ConvertService.ConvertSingleFile(inputFilePath, targetFilePath);
+            _logger.LogInformation("Finished converting file: {0}", inputFilePath);
 
             // update to finished
             recording.Processing = false;
             recording.Date = File.GetLastWriteTime(inputFilePath);
-            Lecture.SaveSettings(lecture, Path.Combine(settings.TargetFolders[index], "assets", "lecture.json"));
+            Lecture.SaveSettings(lecture, queuedFile.Course);
 
             // delete from processing queue
-            currentProcessing.Remove(inputFileName);
+            currentProcessing.Remove(queuedFile);
         }
     }
 }

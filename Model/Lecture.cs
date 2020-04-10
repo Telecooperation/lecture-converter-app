@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using ConverterCore.Settings;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
@@ -18,26 +19,30 @@ namespace ConverterCore.Model
         public List<Recording> Recordings { get; set; }
 
 
-        public static Lecture LoadSettings(string lectureName, string inputFile)
+        public static Lecture LoadSettings(Course course)
         {
             // deserialize JSON directly from a file
-            if (File.Exists(inputFile))
+            var courseJsonFilePath = Path.Combine(course.TargetFolder, "assets", "lecture.json");
+
+            if (File.Exists(courseJsonFilePath))
             {
-                return JsonConvert.DeserializeObject<Lecture>(File.ReadAllText(inputFile));
+                return JsonConvert.DeserializeObject<Lecture>(File.ReadAllText(courseJsonFilePath));
             }
             else
             {
                 return new Lecture()
                 {
-                    Name = lectureName,
+                    Name = course.Name,
                     Semester = Utils.GetSemester(DateTime.Now),
                     Recordings = new List<Recording>()
                 };
             }
         }
 
-        public static void SaveSettings(Lecture obj, string outputFile)
+        public static void SaveSettings(Lecture obj, Course course)
         {
+            var courseJsonFilePath = Path.Combine(course.TargetFolder, "assets", "lecture.json");
+
             JsonSerializerSettings settings = new JsonSerializerSettings();
             settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
 
@@ -46,7 +51,7 @@ namespace ConverterCore.Model
 
             // deserialize JSON directly from a file
             var jsonString = JsonConvert.SerializeObject(obj, Formatting.Indented, settings);
-            File.WriteAllText(outputFile, jsonString);
+            File.WriteAllText(courseJsonFilePath, jsonString);
         }
     }
 }

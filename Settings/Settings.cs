@@ -10,11 +10,7 @@ namespace ConverterCore.Settings
 {
     public class Settings
     {
-        public List<String> SourceFolders { get; set; }
-
-        public List<String> TargetFolders { get; set; }
-
-        public List<String> LectureNames { get; set; }
+        public List<Course> Courses { get; set; }
 
         public static Settings LoadSettings()
         {
