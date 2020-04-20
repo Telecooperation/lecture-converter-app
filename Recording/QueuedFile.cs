@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ConverterCore.Recording
+namespace ConverterCore.Recordings
 {
     public class QueuedFile
     {

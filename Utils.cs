@@ -29,7 +29,12 @@ namespace ConverterCore
 
         public static string GetCleanTitleFromFileName(string fileName)
         {
-            string name = fileName.Replace(".mp4", "").Replace(".trec", "");
+            if (fileName == null)
+            {
+                return null;
+            }
+
+            string name = fileName.Replace(".mp4", "").Replace(".trec", "").Replace("_meta.json", "");
             name = name.Replace("-", " ").Replace("_", " ").Replace("New", "").Replace("new", "").Replace("  ", " ");
 
             string[] splitName = name.Split(' ');

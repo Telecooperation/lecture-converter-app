@@ -1,8 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using ConverterCore.Model;
+using ConverterCore.Studio;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using TkRecordingConverter.util;
 
 namespace ConverterCore.Services
 {
@@ -20,24 +23,33 @@ namespace ConverterCore.Services
             arguments.Append("\"" + outputFileName + "\"");
 
             // run ffmpeg
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            var process = FFmpegHelper.FFmpeg(arguments.ToString(), false);
+            process.OutputDataReceived += Process_OutputDataReceived;
+            process.WaitForExit();
+
+            return process.ExitCode == 0;
+        }
+
+        public Recording ConvertStudioRecording(string inputFileName, string targetFileName, string outputFolder)
+        {
+            var slideVideoPath = inputFileName.Replace("_meta.json", "_slides.mp4");
+            var thVideoPath = inputFileName.Replace("_meta.json", "_talkinghead.mp4");
+
+            var targetDimension = Dimension.Dim720p;
+
+            var converter = new Converter();
+            var recording = converter.Convert(new TkRecordingConverter.util.Configuration()
             {
-                var process = Process.Start(Path.Combine("ffmpeg", "win", "ffmpeg"), arguments.ToString());
-                process.OutputDataReceived += Process_OutputDataReceived;
-                process.WaitForExit();
+                slideVideoPath = slideVideoPath,
+                thVideoPath = thVideoPath,
+                slideInfoPath = inputFileName,
+                outputDir = outputFolder,
+                projectName = targetFileName.Replace("_meta.json", ""),
+                recordingStyle = RecordingStyle.TkStudioStyle(targetDimension),
+                writeJson = false
+            });
 
-                return process.ExitCode == 0;
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                var process = Process.Start(Path.Combine("ffmpeg", "unix", "ffmpeg"), arguments.ToString());
-                process.OutputDataReceived += Process_OutputDataReceived;
-                process.WaitForExit();
-
-                return process.ExitCode == 0;
-            }
-
-            return false;
+            return recording;
         }
 
         private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)

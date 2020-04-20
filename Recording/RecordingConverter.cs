@@ -2,6 +2,7 @@
 using ConverterCore.Services;
 using ConverterCore.Settings;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ConverterCore.Recording
+namespace ConverterCore.Recordings
 {
     public class RecordingConverter
     {
@@ -56,10 +57,23 @@ namespace ConverterCore.Recording
         private bool ShouldConvert(QueuedFile queuedFile)
         {
             // process file?
-            var targetFileName = Path.GetFileName(queuedFile.FilePath).Replace(".trec", ".mp4");
-            var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName);
+            if (queuedFile.FilePath.EndsWith(".trec"))
+            {
+                var targetFileName = Path.GetFileName(queuedFile.FilePath).Replace(".trec", ".mp4");
+                var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName);
 
-            return !File.Exists(targetFilePath);
+                return !File.Exists(targetFilePath);
+            }
+            else if (queuedFile.FilePath.EndsWith("_meta.json"))
+            {
+                var targetFileName = Path.GetFileName(queuedFile.FilePath.Replace("_meta.json", ""));
+                var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName);
+
+                return true;
+                //return !Directory.Exists(targetFilePath);
+            }
+
+            return false;
         }
 
         private void ProcessFile(QueuedFile queuedFile)
@@ -71,40 +85,80 @@ namespace ConverterCore.Recording
                 return;
             }
 
-            // convert
-            var inputFilePath = queuedFile.FilePath;
+            if (queuedFile.Course.Studio)
+            {
+                var inputFilePath = queuedFile.FilePath;
 
-            var targetFileName = Path.GetFileName(queuedFile.FilePath).Replace(".trec", ".mp4");
-            var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName);
+                var targetFileName = Path.GetFileName(queuedFile.FilePath);
+                var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName.Replace("_meta.json", ""));
 
-            // add new lecture entry
-            var lecture = Lecture.LoadSettings(queuedFile.Course);
-            var recording = lecture.Recordings.Where(x => x.Name == Utils.GetCleanTitleFromFileName(targetFileName)).SingleOrDefault();
+                // wait for file to finish copying
+                _logger.LogInformation("Wait 120s for file to complete copy...");
+                Thread.Sleep(1200);
 
-            if (recording == null) {
-                recording = new Model.Recording()
+                var recording = ConvertService.ConvertStudioRecording(inputFilePath, targetFileName, targetFilePath);
+                var targetFolderName = targetFileName.Replace("_meta.json", "");
+
+                // add new lecture entry
+                var lecture = Lecture.LoadSettings(queuedFile.Course);
+                var recordingItem = new Model.Recording()
                 {
-                    Name = Utils.GetCleanTitleFromFileName(targetFileName),
-                    Date = File.GetLastWriteTime(inputFilePath),
-                    FileName = "./video/" + targetFileName,
-                    Processing = true
+                    Name = recording.Description != null ? recording.Description : recording.Name,
+                    Description = recording.Description,
+                    Date = recording.Date != null ? recording.Date : File.GetLastWriteTime(inputFilePath),
+                    FileName = targetFolderName + "/" + recording.FileName,
+                    StageVideo = targetFolderName + "/" + recording.StageVideo,
+                    PresenterFileName = targetFolderName + "/" + recording.PresenterFileName,
+                    Processing = false,
+                    Slides = recording.Slides
                 };
-                lecture.Recordings.Add(recording);
+
+                foreach (var slide in recordingItem.Slides)
+                {
+                    slide.Thumbnail = targetFolderName + "/" + slide.Thumbnail;
+                }
+
+                lecture.Recordings.Add(recordingItem);
                 Lecture.SaveSettings(lecture, queuedFile.Course);
             }
+            else
+            {
+                // convert
+                var inputFilePath = queuedFile.FilePath;
 
-            // wait for file to finish copying
-            _logger.LogInformation("Wait 120s for file to complete copy...");
-            Thread.Sleep(120000);
+                var targetFileName = Path.GetFileName(queuedFile.FilePath).Replace(".trec", ".mp4");
+                var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName);
 
-            _logger.LogInformation("Begin converting file: {0}", inputFilePath);
-            ConvertService.ConvertSingleFile(inputFilePath, targetFilePath);
-            _logger.LogInformation("Finished converting file: {0}", inputFilePath);
+                // add new lecture entry
+                var lecture = Lecture.LoadSettings(queuedFile.Course);
+                var recording = lecture.Recordings.Where(x => x.Name == Utils.GetCleanTitleFromFileName(targetFileName)).SingleOrDefault();
 
-            // update to finished
-            recording.Processing = false;
-            recording.Date = File.GetLastWriteTime(inputFilePath);
-            Lecture.SaveSettings(lecture, queuedFile.Course);
+                if (recording == null)
+                {
+                    recording = new Model.Recording()
+                    {
+                        Name = Utils.GetCleanTitleFromFileName(targetFileName),
+                        Date = File.GetLastWriteTime(inputFilePath),
+                        FileName = "./video/" + targetFileName,
+                        Processing = true
+                    };
+                    lecture.Recordings.Add(recording);
+                    Lecture.SaveSettings(lecture, queuedFile.Course);
+                }
+
+                // wait for file to finish copying
+                _logger.LogInformation("Wait 120s for file to complete copy...");
+                Thread.Sleep(120000);
+
+                _logger.LogInformation("Begin converting file: {0}", inputFilePath);
+                ConvertService.ConvertSingleFile(inputFilePath, targetFilePath);
+                _logger.LogInformation("Finished converting file: {0}", inputFilePath);
+
+                // update to finished
+                recording.Processing = false;
+                recording.Date = File.GetLastWriteTime(inputFilePath);
+                Lecture.SaveSettings(lecture, queuedFile.Course);
+            }
 
             // delete from processing queue
             currentProcessing.Remove(queuedFile);

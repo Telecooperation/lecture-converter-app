@@ -7,7 +7,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-namespace ConverterCore.Recording
+namespace ConverterCore.Recordings
 {
     public class CourseWatcher
     {
@@ -41,10 +41,10 @@ namespace ConverterCore.Recording
                 var files = Directory.EnumerateFiles(course.SourceFolder);
                 foreach (var file in files)
                 {
-                    if (file.EndsWith(".trec") && !detectedFiles.Contains(file))
+                    if ((file.EndsWith(".trec") || file.EndsWith(".json")) && !detectedFiles.Contains(file))
                     {
                         OnNewFileDetected(new NewFileDetectedEventArgs() { FileName = file, Course = course });
-                    }                    
+                    }
                 }
             }
             catch (Exception ex)
@@ -55,6 +55,17 @@ namespace ConverterCore.Recording
 
         public virtual void OnNewFileDetected(NewFileDetectedEventArgs e)
         {
+            if (e.FileName.EndsWith(".json"))
+            {
+                var slides = e.FileName.Replace("_meta.json", "_slides.mp4");
+                var th = e.FileName.Replace("_meta.json", "_talkinghead.mp4");
+
+                if (!File.Exists(slides) || !File.Exists(th))
+                {
+                    return;
+                }
+            }
+
             detectedFiles.Add(e.FileName);
 
             NewFileDetected?.Invoke(this, e);

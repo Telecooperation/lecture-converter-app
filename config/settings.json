@@ -3,8 +3,9 @@
     {
       "Id": "cnuvs_ss20",
       "Name": "Computer Netzwerke und verteilte Systeme",
-      "SourceFolder": "D:\\Git\\LectureConverter\\source",
-      "TargetFolder": "D:\\Git\\LectureConverter\\target"
+      "SourceFolder": "C:\\Users\\alexander.seeliger\\Documents\\Git\\lecture-converter-app\\bin\\Source",
+      "TargetFolder": "C:\\Users\\alexander.seeliger\\Documents\\Git\\lecture-converter-app\\bin\\Target",
+      "Studio": true
     }
   ]
 }
