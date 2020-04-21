@@ -249,9 +249,9 @@ namespace ConverterCore.Studio
                           //"scale=" + targetDimension.width + ":-2, crop=" + targetDimension.width + ":" +
                           //targetDimension.height + "\"
                           "[0:v]scale=" + config.recordingStyle.targetDimension.width + ":-2, crop=" + config.recordingStyle.targetDimension.width + ":" +
-                          config.recordingStyle.targetDimension.height + ",split=2[slides1][slides2];" +
+                          config.recordingStyle.targetDimension.height + ",fps=fps=30,split=2[slides1][slides2];" +
                           "[1v]scale=" + config.recordingStyle.targetDimension.width + ":" +
-                            config.recordingStyle.targetDimension.height + "[th];" +
+                            config.recordingStyle.targetDimension.height + ",fps=fps=30[th];" +
                           "[th]format = rgba,chromakey=" + config.recordingStyle.ChromaKeyParams.color + ":" +
                           config.recordingStyle.ChromaKeyParams.similarity + ":" +
                           config.recordingStyle.ChromaKeyParams.blend + ",split=2[th_ck1][th_ck2];" +
@@ -268,9 +268,9 @@ namespace ConverterCore.Studio
                           "[2][slides_perspective]overlay=0:0[slides_with_background];" +
                           "[slides_with_background][th_ck_tr]overlay=0:0[stage]" +
                           "\" " +
-                          "-map \"[slides1]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -tune stillimage -profile:v baseline -level 3.0 -pix_fmt yuv420p " + Path.Combine(config.outputDir, "slides.mp4") + " " +
-                          "-map \"[th_ck_ct]\" -map \"[1a1]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -profile:v baseline -level 3.0 -pix_fmt yuv420p -acodec aac " + Path.Combine(config.outputDir, "talkinghead.mp4") + " " +
-                          "-map \"[stage]\" -map \"[1a2\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -profile:v baseline -level 3.0 -pix_fmt yuv420p -acodec aac " + Path.Combine(config.outputDir, "stage.mp4") + " ";
+                          "-map \"[slides1]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -tune stillimage -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 " + Path.Combine(config.outputDir, "slides.mp4") + " " +
+                          "-map \"[th_ck_ct]\" -map \"[1a1]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 -acodec aac -b:a 192k " + Path.Combine(config.outputDir, "talkinghead.mp4") + " " +
+                          "-map \"[stage]\" -map \"[1a2]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 -acodec aac -b:a 192k " + Path.Combine(config.outputDir, "stage.mp4") + " ";
 
             Console.WriteLine(args);
 

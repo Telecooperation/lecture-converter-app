@@ -69,8 +69,7 @@ namespace ConverterCore.Recordings
                 var targetFileName = Path.GetFileName(queuedFile.FilePath.Replace("_meta.json", ""));
                 var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName);
 
-                return true;
-                //return !Directory.Exists(targetFilePath);
+                return !Directory.Exists(targetFilePath);
             }
 
             return false;

@@ -19,20 +19,24 @@ namespace TkRecordingConverter.util
                 targetDimension = targetDim,
                 ChromaKeyParams = new ChromaKeyParameters
                 {
-                    color = "0x358F75",
-                    similarity = "0.12",
+                    //color = "0x358F75",
+                    //color = "0x49AD68",
+                    color = "0x3FB68F",
+                    similarity = "0.16",
                     blend = "0.0001"
                 },
                 TalkingHeadConfig = new TalkingHeadConfiguration
                 {
-                    Crop = new CropDimensions(0.2f, 0.0f, 0.6f, 0.8f, targetDim),
+                    Crop = new CropDimensions(0.2f, 0.0f, 0.6f, 0.8f, targetDim), //new!
+                                                                                  //Crop = new CropDimensions(0.07f, 0.0f, 0.5f, 0.67f, targetDim), //old
                     ChromaKeyTalkingHead = true
                 },
                 StageConfig = new StageConfiguration
                 {
                     ChromaKeyTalkingHead = true,
                     slideTransformation = new TranslateScaleAndDeformTransformation(0.008f, 0.014f, 0.75f, 0.03f, targetDim),
-                    speakerTransformation = new TranslateScaleAndDeformTransformation(0.47f, 0.31f, 0.70f, 0, targetDim)
+                    speakerTransformation = new TranslateScaleAndDeformTransformation(0.47f, 0.31f, 0.70f, 0, targetDim) //new!
+                                                                                                                         //speakerTransformation = new TranslateScaleAndDeformTransformation(0.58f, 0.28f, 0.75f, 0, targetDim) //old
                 }
             };
         }
