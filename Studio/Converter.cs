@@ -44,11 +44,12 @@ namespace ConverterCore.Studio
             Directory.CreateDirectory(config.outputDir);
             ConvertVideoFiles(config);
             finalRecording.Name = config.projectName;
-            finalRecording.Date = File.GetCreationTimeUtc(config.slideVideoPath);
+            finalRecording.Date =  File.GetCreationTimeUtc(config.slideVideoPath);
             finalRecording.FileName = "slides.mp4";
             finalRecording.PresenterFileName = "talkinghead.mp4";
             finalRecording.StageVideo = "stage.mp4";
             finalRecording.Slides = BuildThumbnails(config, finalRecording);
+
             if (config.writeJson)
                 WriteMetadata(finalRecording, config);
             return finalRecording;

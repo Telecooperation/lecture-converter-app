@@ -99,13 +99,16 @@ namespace ConverterCore.Recordings
                 var recording = ConvertService.ConvertStudioRecording(inputFilePath, targetFileName, targetFilePath);
                 var targetFolderName = Path.Combine("video", targetFileName.Replace("_meta.json", ""));
 
+                // read metadata
+                var metadata = JsonConvert.DeserializeObject<Metadata>(File.ReadAllText(inputFilePath));
+
                 // add new lecture entry
                 var lecture = Lecture.LoadSettings(queuedFile.Course);
                 var recordingItem = new Model.Recording()
                 {
-                    Name = recording.Description != null ? recording.Description : recording.Name,
-                    Description = recording.Description,
-                    Date = recording.Date != null ? recording.Date : File.GetLastWriteTime(inputFilePath),
+                    Name = metadata.Name != null ? metadata.Name : recording.Name,
+                    Description = metadata.Name,
+                    Date = metadata.Date != null ? metadata.Date : File.GetLastWriteTime(inputFilePath),
                     FileName = targetFolderName + "/" + recording.FileName,
                     StageVideo = targetFolderName + "/" + recording.StageVideo,
                     PresenterFileName = targetFolderName + "/" + recording.PresenterFileName,
