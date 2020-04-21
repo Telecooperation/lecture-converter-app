@@ -97,7 +97,7 @@ namespace ConverterCore.Recordings
                 Thread.Sleep(1200);
 
                 var recording = ConvertService.ConvertStudioRecording(inputFilePath, targetFileName, targetFilePath);
-                var targetFolderName = targetFileName.Replace("_meta.json", "");
+                var targetFolderName = Path.Combine("video", targetFileName.Replace("_meta.json", ""));
 
                 // add new lecture entry
                 var lecture = Lecture.LoadSettings(queuedFile.Course);

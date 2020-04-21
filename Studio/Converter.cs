@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using ConverterCore.Model;
 using Newtonsoft.Json;
 using Tesseract;
@@ -41,7 +42,7 @@ namespace ConverterCore.Studio
         {
             Recording finalRecording = new Recording();
             Directory.CreateDirectory(config.outputDir);
-            //ConvertVideoFiles(config);
+            ConvertVideoFiles(config);
             finalRecording.Name = config.projectName;
             finalRecording.Date = File.GetCreationTimeUtc(config.slideVideoPath);
             finalRecording.FileName = "slides.mp4";
@@ -63,6 +64,18 @@ namespace ConverterCore.Studio
 
         private Slide[] BuildThumbnails(Configuration config, Recording finalRecording)
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                return BuildThumbnailsUnix(config, finalRecording);
+            }
+            else
+            {
+                return BuildThumbnailsWin(config, finalRecording);
+            }
+        }
+
+        private Slide[] BuildThumbnailsWin(Configuration config, Recording finalRecording)
+        {
             var thumbOutDir = Path.Combine(config.outputDir, "thumbs");
             Directory.CreateDirectory(thumbOutDir);
 
@@ -74,7 +87,7 @@ namespace ConverterCore.Studio
 
             var keyframes = new List<TimeSpan>();
             keyframes.Add(TimeSpan.Zero);
-            foreach (string timestamp in projectJson["Slides"])
+            foreach (string timestamp in projectJson["slides"])
                 keyframes.Add(TimeSpan.Parse(timestamp));
 
             var mediaLen = GetMediaLength(Path.Combine(config.outputDir, finalRecording.FileName));
@@ -108,6 +121,61 @@ namespace ConverterCore.Studio
             }
 
             ocrEngine.Dispose();
+            return result.ToArray();
+        }
+
+        private Slide[] BuildThumbnailsUnix(Configuration config, Recording finalRecording)
+        {
+            var thumbOutDir = Path.Combine(config.outputDir, "thumbs");
+            Directory.CreateDirectory(thumbOutDir);
+
+            List<Slide> result = new List<Slide>();
+
+            dynamic projectJson = JsonConvert.DeserializeObject(File.ReadAllText(config.slideInfoPath));
+            int currentId = 0;
+
+            var keyframes = new List<TimeSpan>();
+            keyframes.Add(TimeSpan.Zero);
+            foreach (string timestamp in projectJson["slides"])
+                keyframes.Add(TimeSpan.Parse(timestamp));
+
+            var mediaLen = GetMediaLength(Path.Combine(config.outputDir, finalRecording.FileName));
+
+            foreach (var keyframe in keyframes)
+            {
+                TimeSpan? nextKeyframe = null;
+
+                if (keyframes.IndexOf(keyframe) != keyframes.Count - 1)
+                {
+                    nextKeyframe = keyframes[keyframes.IndexOf(keyframe) + 1];
+                }
+                else
+                {
+                    nextKeyframe = GetMediaLength(Path.Combine(config.outputDir, finalRecording.FileName));
+                }
+
+                string thumbName = ExportThumbnail((float)nextKeyframe.GetValueOrDefault().TotalSeconds - 2.0f, Path.Combine(config.outputDir, finalRecording.FileName), thumbOutDir,
+                    (currentId++).ToString());
+
+                var process = FFmpegHelper.BuildProcess("tesseract", Path.Combine(thumbOutDir, thumbName) + " tmp", false);
+                process.Start();
+                process.WaitForExit();
+
+                var ocr = File.ReadAllText("tmp.txt");
+                File.Delete("tmp");
+
+                var slide = new Slide
+                {
+                    StartPosition = (float)keyframe.TotalSeconds + 0.2f,
+                    Thumbnail = "thumbs/" + thumbName,
+                    Ocr = ocr
+                };
+
+                if (keyframe.Equals(TimeSpan.Zero))
+                    slide.StartPosition = 0.0f;
+                result.Add(slide);
+            }
+
             return result.ToArray();
         }
 
