@@ -6,8 +6,8 @@ namespace ConverterCore.Model
 {
     public class Metadata
     {
-        public string Name { get; set; }
+        public string Description { get; set; }
 
-        public DateTime Date { get; set; }
+        public DateTime LectureDate { get; set; }
     }
 }

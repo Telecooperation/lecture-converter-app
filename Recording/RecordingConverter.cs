@@ -92,7 +92,7 @@ namespace ConverterCore.Recordings
                 var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName.Replace("_meta.json", ""));
 
                 // wait for file to finish copying
-                _logger.LogInformation("Wait 120s for file to complete copy...");
+                _logger.LogInformation($"Begin transcoding {targetFileName}...");
                 Thread.Sleep(1200);
 
                 var recording = ConvertService.ConvertStudioRecording(inputFilePath, targetFileName, targetFilePath);
@@ -105,14 +105,15 @@ namespace ConverterCore.Recordings
                 var lecture = Lecture.LoadSettings(queuedFile.Course);
                 var recordingItem = new Model.Recording()
                 {
-                    Name = metadata.Name != null ? metadata.Name : recording.Name,
-                    Description = metadata.Name,
-                    Date = metadata.Date != null ? metadata.Date : File.GetLastWriteTime(inputFilePath),
+                    Name = metadata.Description != null ? metadata.Description : recording.Name,
+                    Description = metadata.Description,
+                    Date = metadata.LectureDate != null ? metadata.LectureDate : File.GetLastWriteTime(inputFilePath),
                     FileName = targetFolderName + "/" + recording.FileName,
                     StageVideo = targetFolderName + "/" + recording.StageVideo,
                     PresenterFileName = targetFolderName + "/" + recording.PresenterFileName,
                     Processing = false,
-                    Slides = recording.Slides
+                    Slides = recording.Slides,
+                    Duration = recording.Duration
                 };
 
                 foreach (var slide in recordingItem.Slides)

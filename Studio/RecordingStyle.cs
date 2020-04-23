@@ -21,14 +21,15 @@ namespace TkRecordingConverter.util
                 {
                     //color = "0x358F75",
                     //color = "0x49AD68",
+                    //color= "0x69AE53", //max cnuvs
                     color = "0x3FB68F",
-                    similarity = "0.16",
-                    blend = "0.0001"
+                    similarity = "0.13",
+                    blend = "0.001"
                 },
                 TalkingHeadConfig = new TalkingHeadConfiguration
                 {
                     Crop = new CropDimensions(0.2f, 0.0f, 0.6f, 0.8f, targetDim), //new!
-                                                                                  //Crop = new CropDimensions(0.07f, 0.0f, 0.5f, 0.67f, targetDim), //old
+                    //Crop = new CropDimensions(0.07f, 0.0f, 0.5f, 0.67f, targetDim), //old
                     ChromaKeyTalkingHead = true
                 },
                 StageConfig = new StageConfiguration
@@ -36,7 +37,7 @@ namespace TkRecordingConverter.util
                     ChromaKeyTalkingHead = true,
                     slideTransformation = new TranslateScaleAndDeformTransformation(0.008f, 0.014f, 0.75f, 0.03f, targetDim),
                     speakerTransformation = new TranslateScaleAndDeformTransformation(0.47f, 0.31f, 0.70f, 0, targetDim) //new!
-                                                                                                                         //speakerTransformation = new TranslateScaleAndDeformTransformation(0.58f, 0.28f, 0.75f, 0, targetDim) //old
+                    //speakerTransformation = new TranslateScaleAndDeformTransformation(0.58f, 0.28f, 0.75f, 0, targetDim) //old
                 }
             };
         }
@@ -58,7 +59,7 @@ namespace TkRecordingConverter.util
         {
             public TranslateScaleAndDeformTransformation(float x, float y, float scale, float deform, Dimension dimension)
             {
-                InitFields((int)(x* dimension.width), (int)(y*dimension.height), (int)(dimension.width * scale), (int)(dimension.height * scale), (int) (deform*dimension.height));
+                InitFields((int)(x * dimension.width), (int)(y * dimension.height), (int)(dimension.width * scale), (int)(dimension.height * scale), (int)(deform * dimension.height));
             }
 
             public TranslateScaleAndDeformTransformation(int x, int y, int width, int height, int deform)
@@ -134,11 +135,11 @@ namespace TkRecordingConverter.util
         {
             public CropDimensions(float x, float y, float width, float height, Dimension dimension)
             {
-                
-                this.x = (int) (x * dimension.width);
-                this.y = (int) (y * dimension.height);
-                this.width = (int) (width * dimension.width);
-                this.height = (int) (height * dimension.height);
+
+                this.x = (int)(x * dimension.width);
+                this.y = (int)(y * dimension.height);
+                this.width = (int)(width * dimension.width);
+                this.height = (int)(height * dimension.height);
             }
 
             public int x;

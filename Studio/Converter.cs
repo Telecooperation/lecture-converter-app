@@ -14,41 +14,23 @@ namespace ConverterCore.Studio
 {
     public class Converter
     {
-        public void Convert(string folder, Dimension targetDimension)
-        {
-            var slidesFile = Directory.GetFiles(folder).FirstOrDefault(f => f.EndsWith("slides.mp4"));
-            var thFile = Directory.GetFiles(folder).FirstOrDefault(f => f.EndsWith("talkinghead.mp4"));
-            var metaFile = Directory.GetFiles(folder).FirstOrDefault(f => f.EndsWith("meta.json"));
-
-            Convert(slidesFile, thFile, metaFile, targetDimension);
-        }
-        public Recording Convert(string slideVideoPath, string thVideoPath, string metaInfoPath, Dimension targetDimension)
-        {
-            dynamic projectJson = JsonConvert.DeserializeObject(File.ReadAllText(metaInfoPath));
-
-            return Convert(new Configuration
-            {
-                slideVideoPath = slideVideoPath,
-                thVideoPath = thVideoPath,
-                slideInfoPath = metaInfoPath,
-                outputDir = Path.GetDirectoryName(slideVideoPath) + "\\build",
-                projectName = new FileInfo(slideVideoPath).Directory.Name,
-                recordingStyle = RecordingStyle.TkStudioStyle(targetDimension),
-                writeJson = true
-            });
-        }
-
         public Recording Convert(Configuration config)
         {
-            Recording finalRecording = new Recording();
+            // generate output directory
             Directory.CreateDirectory(config.outputDir);
+
+            // convert file
             ConvertVideoFiles(config);
+
+            // generate recording object
+            var finalRecording = new Recording();
             finalRecording.Name = config.projectName;
-            finalRecording.Date =  File.GetCreationTimeUtc(config.slideVideoPath);
+            finalRecording.Date = File.GetCreationTimeUtc(config.slideVideoPath);
             finalRecording.FileName = "slides.mp4";
             finalRecording.PresenterFileName = "talkinghead.mp4";
             finalRecording.StageVideo = "stage.mp4";
             finalRecording.Slides = BuildThumbnails(config, finalRecording);
+            finalRecording.Duration = GetMediaLength(config.slideVideoPath).TotalSeconds;
 
             if (config.writeJson)
                 WriteMetadata(finalRecording, config);
@@ -90,8 +72,6 @@ namespace ConverterCore.Studio
             keyframes.Add(TimeSpan.Zero);
             foreach (string timestamp in projectJson["slides"])
                 keyframes.Add(TimeSpan.Parse(timestamp));
-
-            var mediaLen = GetMediaLength(Path.Combine(config.outputDir, finalRecording.FileName));
 
             foreach (var keyframe in keyframes)
             {
@@ -140,8 +120,6 @@ namespace ConverterCore.Studio
             foreach (string timestamp in projectJson["slides"])
                 keyframes.Add(TimeSpan.Parse(timestamp));
 
-            var mediaLen = GetMediaLength(Path.Combine(config.outputDir, finalRecording.FileName));
-
             foreach (var keyframe in keyframes)
             {
                 TimeSpan? nextKeyframe = null;
@@ -163,7 +141,7 @@ namespace ConverterCore.Studio
                 process.WaitForExit();
 
                 var ocr = File.ReadAllText("tmp.txt");
-                File.Delete("tmp");
+                File.Delete("tmp.txt");
 
                 var slide = new Slide
                 {
@@ -239,37 +217,37 @@ namespace ConverterCore.Studio
             var trimTHVideo = lenTHVideo - lenSlideVideo;
 
             string args = "-i " + config.slideVideoPath + " " +
-                          "-i " + config.thVideoPath + " " +
-                          "-i " + config.recordingStyle.targetDimension.background + " " +
-                          "-filter_complex " +
-                          "\"" +
-                          "[1:v]trim=start=" + trimTHVideo.TotalSeconds.ToString("0.00000", CultureInfo.InvariantCulture) + ",setpts=PTS-STARTPTS[1v];" +
-                          "[1:a]atrim=start=" + trimTHVideo.TotalSeconds.ToString("0.00000", CultureInfo.InvariantCulture) + ",asetpts=PTS-STARTPTS,asplit=2[1a1][1a2];" +
-                          //"[0:v]scale=" + config.recordingStyle.targetDimension.width + ":" +
-                          //  config.recordingStyle.targetDimension.height + ",split=2[slides1][slides2];" +
-                          //"scale=" + targetDimension.width + ":-2, crop=" + targetDimension.width + ":" +
-                          //targetDimension.height + "\"
-                          "[0:v]scale=" + config.recordingStyle.targetDimension.width + ":-2, crop=" + config.recordingStyle.targetDimension.width + ":" +
-                          config.recordingStyle.targetDimension.height + ",fps=fps=30,split=2[slides1][slides2];" +
-                          "[1v]scale=" + config.recordingStyle.targetDimension.width + ":" +
-                            config.recordingStyle.targetDimension.height + ",fps=fps=30[th];" +
-                          "[th]format = rgba,chromakey=" + config.recordingStyle.ChromaKeyParams.color + ":" +
-                          config.recordingStyle.ChromaKeyParams.similarity + ":" +
-                          config.recordingStyle.ChromaKeyParams.blend + ",split=2[th_ck1][th_ck2];" +
-                          "[2][th_ck1]overlay=0:0[th_ck_bg];" +
-                          "[th_ck_bg]crop=" + config.recordingStyle.TalkingHeadConfig.Crop.width + ":" +
-                                            config.recordingStyle.TalkingHeadConfig.Crop.height + ":" +
-                                            config.recordingStyle.TalkingHeadConfig.Crop.x + ":" +
-                                            config.recordingStyle.TalkingHeadConfig.Crop.y + "[th_ck_ct];" +
-                          "[slides2]format = rgba,pad = iw + 4:ih + 4:2:2:black@0," +
-                          "perspective=" + config.recordingStyle.StageConfig.slideTransformation.ToString() + "," +
-                          "crop=" + config.recordingStyle.targetDimension.width + ":" +
-                          config.recordingStyle.targetDimension.height + ":2:2" + "[slides_perspective];" +
-                          "[th_ck2]pad = iw + 4:ih + 4:2:2:black@0," + "perspective=" + config.recordingStyle.StageConfig.speakerTransformation.ToString() + "[th_ck_tr];" +
-                          "[2][slides_perspective]overlay=0:0[slides_with_background];" +
-                          "[slides_with_background][th_ck_tr]overlay=0:0[stage]" +
-                          "\" " +
-                          "-map \"[slides1]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -tune stillimage -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 " + Path.Combine(config.outputDir, "slides.mp4") + " " +
+                           "-i " + config.thVideoPath + " " +
+                           "-i " + config.recordingStyle.targetDimension.background + " " +
+                           "-filter_complex " +
+                           "\"" +
+                           "[1:v]trim=start=" + trimTHVideo.TotalSeconds.ToString("0.00000", CultureInfo.InvariantCulture) + ",setpts=PTS-STARTPTS[1v];" +
+                           "[1:a]atrim=start=" + trimTHVideo.TotalSeconds.ToString("0.00000", CultureInfo.InvariantCulture) + ",asetpts=PTS-STARTPTS,asplit=2[1a1][1a2];" +
+                           //"[0:v]scale=" + config.recordingStyle.targetDimension.width + ":" +
+                           //  config.recordingStyle.targetDimension.height + ",split=2[slides1][slides2];" +
+                           //"scale=" + targetDimension.width + ":-2, crop=" + targetDimension.width + ":" +
+                           //targetDimension.height + "\"
+                           "[0:v]scale=" + config.recordingStyle.targetDimension.width + ":-2, crop=" + config.recordingStyle.targetDimension.width + ":" +
+                           config.recordingStyle.targetDimension.height + ",fps=fps=30,split=2[slides1][slides2];" +
+                           "[1v]scale=" + config.recordingStyle.targetDimension.width + ":" +
+                             config.recordingStyle.targetDimension.height + ",fps=fps=30[th];" +
+                           "[th]format = rgba,chromakey=" + config.recordingStyle.ChromaKeyParams.color + ":" +
+                           config.recordingStyle.ChromaKeyParams.similarity + ":" +
+                           config.recordingStyle.ChromaKeyParams.blend + ",split=2[th_ck1][th_ck2];" +
+                           "[2][th_ck1]overlay=0:0[th_ck_bg];" +
+                           "[th_ck_bg]crop=" + config.recordingStyle.TalkingHeadConfig.Crop.width + ":" +
+                                             config.recordingStyle.TalkingHeadConfig.Crop.height + ":" +
+                                             config.recordingStyle.TalkingHeadConfig.Crop.x + ":" +
+                                             config.recordingStyle.TalkingHeadConfig.Crop.y + "[th_ck_ct];" +
+                           "[slides2]format = rgba,pad = iw + 4:ih + 4:2:2:black@0," +
+                           "perspective=" + config.recordingStyle.StageConfig.slideTransformation.ToString() + "," +
+                           "crop=" + config.recordingStyle.targetDimension.width + ":" +
+                           config.recordingStyle.targetDimension.height + ":2:2" + "[slides_perspective];" +
+                           "[th_ck2]pad = iw + 4:ih + 4:2:2:black@0," + "perspective=" + config.recordingStyle.StageConfig.speakerTransformation.ToString() + "[th_ck_tr];" +
+                           "[2][slides_perspective]overlay=0:0[slides_with_background];" +
+                           "[slides_with_background][th_ck_tr]overlay=0:0[stage]" +
+                           "\" " +
+                           "-map \"[slides1]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -tune stillimage -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 " + Path.Combine(config.outputDir, "slides.mp4") + " " +
                           "-map \"[th_ck_ct]\" -map \"[1a1]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 -acodec aac -b:a 192k " + Path.Combine(config.outputDir, "talkinghead.mp4") + " " +
                           "-map \"[stage]\" -map \"[1a2]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 -acodec aac -b:a 192k " + Path.Combine(config.outputDir, "stage.mp4") + " ";
 
@@ -278,16 +256,6 @@ namespace ConverterCore.Studio
             Process p = FFmpegHelper.FFmpeg(args, false);
             p.Start();
             p.WaitForExit();
-        }
-
-        private void CreateVideoFiles(Configuration config)
-        {
-            var lenSlideVideo = GetMediaLength(config.slideVideoPath);
-            var lenTHVideo = GetMediaLength(config.thVideoPath);
-
-            var trimTHVideo = lenTHVideo - lenSlideVideo;
-
-            //<
         }
     }
 }

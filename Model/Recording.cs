@@ -23,5 +23,7 @@ namespace ConverterCore.Model
         public bool Processing { get; set; }
 
         public Slide[] Slides { get; set; }
+
+        public double Duration { get; set; }
     }
 }
