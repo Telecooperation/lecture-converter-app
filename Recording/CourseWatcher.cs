@@ -38,10 +38,10 @@ namespace ConverterCore.Recordings
         {
             try
             {
-                var files = Directory.EnumerateFiles(course.SourceFolder);
+                var files = Directory.EnumerateFiles(course.SourceFolder, "*", SearchOption.AllDirectories);
                 foreach (var file in files)
                 {
-                    if ((file.EndsWith(".trec") || file.EndsWith(".json")) && !detectedFiles.Contains(file))
+                    if ((file.EndsWith(".trec") || file.EndsWith("_meta.json")) && !detectedFiles.Contains(file))
                     {
                         OnNewFileDetected(new NewFileDetectedEventArgs() { FileName = file, Course = course });
                     }
