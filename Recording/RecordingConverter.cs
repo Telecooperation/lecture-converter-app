@@ -60,16 +60,17 @@ namespace ConverterCore.Recordings
             if (queuedFile.FilePath.EndsWith(".trec"))
             {
                 var targetFileName = Path.GetFileName(queuedFile.FilePath).Replace(".trec", ".mp4");
-                var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName);
+                var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, targetFileName);
 
                 return !File.Exists(targetFilePath);
             }
             else if (queuedFile.FilePath.EndsWith("_meta.json"))
             {
                 var targetFileName = Path.GetFileName(queuedFile.FilePath.Replace("_meta.json", ""));
+                var convertFilePath = Path.Combine(queuedFile.Course.ConvertFolder, targetFileName);
                 var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName);
 
-                return !Directory.Exists(targetFilePath);
+                return !Directory.Exists(targetFilePath) && !Directory.Exists(convertFilePath);
             }
 
             return false;
@@ -89,7 +90,7 @@ namespace ConverterCore.Recordings
                 var inputFilePath = queuedFile.FilePath;
 
                 var targetFileName = Path.GetFileName(queuedFile.FilePath);
-                var targetFilePath = Path.Combine(queuedFile.Course.TargetFolder, "video", targetFileName.Replace("_meta.json", ""));
+                var targetFilePath = Path.Combine(queuedFile.Course.ConvertFolder, targetFileName.Replace("_meta.json", ""));
 
                 // wait for file to finish copying
                 _logger.LogInformation($"Begin transcoding {targetFileName}...");
@@ -102,7 +103,6 @@ namespace ConverterCore.Recordings
                 var metadata = JsonConvert.DeserializeObject<Metadata>(File.ReadAllText(inputFilePath));
 
                 // add new lecture entry
-                var lecture = Lecture.LoadSettings(queuedFile.Course);
                 var recordingItem = new Model.Recording()
                 {
                     Name = metadata.Description != null ? metadata.Description : recording.Name,
@@ -121,8 +121,9 @@ namespace ConverterCore.Recordings
                     slide.Thumbnail = targetFolderName + "/" + slide.Thumbnail;
                 }
 
-                lecture.Recordings.Add(recordingItem);
-                Lecture.SaveSettings(lecture, queuedFile.Course);
+                File.WriteAllText(Path.Combine(targetFilePath, "meta.json"), JsonConvert.SerializeObject(recordingItem, Formatting.Indented));
+
+                _logger.LogInformation($"Finished transcoding {targetFileName}");
             }
             else
             {

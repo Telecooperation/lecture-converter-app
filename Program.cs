@@ -34,6 +34,7 @@ namespace ConverterCore
             services.AddTransient<FFMpegConvertService, FFMpegConvertService>();
             services.AddTransient<RecordingConverter, RecordingConverter>();
             services.AddTransient<CourseWatcher, CourseWatcher>();
+            services.AddTransient<PublishService, PublishService>();
 
             // add app
             services.AddTransient<App>();

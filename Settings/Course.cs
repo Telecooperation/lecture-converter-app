@@ -12,6 +12,8 @@ namespace ConverterCore.Settings
 
         public string SourceFolder { get; set; }
 
+        public string ConvertFolder { get; set; }
+
         public string TargetFolder { get; set; }
 
         public bool Studio { get; set; }

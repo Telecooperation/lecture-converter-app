@@ -1,4 +1,5 @@
 ﻿using ConverterCore.Recordings;
+using ConverterCore.Services;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
@@ -14,11 +15,17 @@ namespace ConverterCore
 
         private CourseWatcher _recordingWatcher;
 
-        public App(ILogger<App> logger, RecordingConverter recordingConverter, CourseWatcher recordingWatcher)
+        private PublishService _publishService;
+
+        public App(ILogger<App> logger, 
+            RecordingConverter recordingConverter, 
+            CourseWatcher recordingWatcher,
+            PublishService publishService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _recordingConverter = recordingConverter ?? throw new ArgumentNullException(nameof(recordingConverter));
             _recordingWatcher = recordingWatcher ?? throw new ArgumentNullException(nameof(recordingWatcher));
+            _publishService = publishService ?? throw new ArgumentNullException(nameof(publishService));
         }
 
         public async Task Run()
@@ -44,6 +51,9 @@ namespace ConverterCore
 
                 _logger.LogInformation("Observing: {0}", course.SourceFolder);
             }
+
+            // start publish service
+            _publishService.RunPublishQueue();
 
             _logger.LogInformation("Converter is running, and waiting for new files...");
             await Task.CompletedTask;
