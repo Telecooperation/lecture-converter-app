@@ -14,6 +14,14 @@ namespace ConverterCore.Services
     {
         private readonly ILogger<FFMpegConvertService> _logger;
 
+        private readonly Converter converter;
+
+        public FFMpegConvertService(ILogger<FFMpegConvertService> logger, Converter converter)
+        {
+            this._logger = logger;
+            this.converter = converter;
+        }
+
         public bool ConvertSingleFile(string inputFileName, string outputFileName)
         {
             var arguments = new StringBuilder();
@@ -76,9 +84,7 @@ namespace ConverterCore.Services
                 writeJson = false
             };
 
-            var converter = new Converter();
             var recording = converter.Convert(config);
-
             return recording;
         }
 

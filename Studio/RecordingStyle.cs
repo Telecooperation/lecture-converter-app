@@ -22,8 +22,8 @@ namespace TkRecordingConverter.util
                     //color = "0x358F75",
                     //color = "0x49AD68",
                     //color= "0x69AE53", //max cnuvs
-                    color = "0x3FB68F",
-                    similarity = "0.10",
+                    color = "0x249561",
+                    similarity = "0.13",
                     blend = "0.001"
                 },
                 TalkingHeadConfig = new TalkingHeadConfiguration

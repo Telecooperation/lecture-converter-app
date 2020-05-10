@@ -1,8 +1,11 @@
 ﻿using ConverterCore.Recordings;
 using ConverterCore.Services;
+using ConverterCore.Studio;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Threading.Tasks;
+using TkRecordingConverter.util;
 
 namespace ConverterCore
 {
@@ -32,6 +35,7 @@ namespace ConverterCore
 
             // add services
             services.AddTransient<FFMpegConvertService, FFMpegConvertService>();
+            services.AddTransient<Converter, Converter>();
             services.AddTransient<RecordingConverter, RecordingConverter>();
             services.AddTransient<CourseWatcher, CourseWatcher>();
             services.AddTransient<PublishService, PublishService>();

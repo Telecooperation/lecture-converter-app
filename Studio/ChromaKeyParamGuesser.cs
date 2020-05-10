@@ -8,6 +8,8 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Text;
 using Newtonsoft.Json;
+using SixLabors.ImageSharp.ColorSpaces;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace TkRecordingConverter.util
 {
@@ -47,44 +49,44 @@ namespace TkRecordingConverter.util
             var stepSize = len.TotalSeconds / NrOfSamples;
             double currentTime = stepSize / 2.0;
 
-            Console.WriteLine("Vidoe len: " + len.TotalSeconds);
-
-            String args = "-image " + Path.Combine(outPath, "tmp.jpg") + " -clusters 2 -json";
-
             for (int i = 0; i < NrOfSamples - 1; i++)
             {
-                Console.WriteLine("Sampeling at " + currentTime);
+                Console.WriteLine("Sampling at " + currentTime);
                 currentTime += stepSize;
 
+                // create thumbnail
                 ExportThumbnail((float)currentTime, videoFile, outPath, "tmp");
 
-                Process p = null;
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    p = FFmpegHelper.BuildProcess(Path.Combine("resources", "colorsummarizer", "bin", "colorsummarizer.exe"), args, true);
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    p = FFmpegHelper.BuildProcess("perl", "-X " + Path.Combine("resources", "colorsummarizer", "bin", "colorsummarizer") + " " + args, true);
-
-                p.Start();
-
-                string content = "";
-                while (!p.StandardOutput.EndOfStream)
+                // pick colors
+                using (var img = SixLabors.ImageSharp.Image.Load<Rgba32>(Path.Combine(outPath, "tmp.jpg")))
                 {
-                    var line = p.StandardOutput.ReadLine();
+                    var height = img.Height / 1080;
+                    var width = img.Width / 1920;
 
-                    if (!line.StartsWith("Use"))
-                    {
-                        content += line;
-                        Console.WriteLine(line);
-                    }
+                    var imgColor = img[400 * width, 400 * height].Rgb;
+                    colors.Add(Color.FromArgb(imgColor.R, imgColor.G, imgColor.B));
+
+                    imgColor = img[350 * width, 350 * height].Rgb;
+                    colors.Add(Color.FromArgb(imgColor.R, imgColor.G, imgColor.B));
+
+                    imgColor = img[200 * width, 800 * height].Rgb;
+                    colors.Add(Color.FromArgb(imgColor.R, imgColor.G, imgColor.B));
+
+                    imgColor = img[180 * width, 820 * height].Rgb;
+                    colors.Add(Color.FromArgb(imgColor.R, imgColor.G, imgColor.B));
+
+                    imgColor = img[1600 * width, 200 * height].Rgb;
+                    colors.Add(Color.FromArgb(imgColor.R, imgColor.G, imgColor.B));
+
+                    imgColor = img[1620 * width, 150 * height].Rgb;
+                    colors.Add(Color.FromArgb(imgColor.R, imgColor.G, imgColor.B));
+
+                    imgColor = img[1700 * width, 800 * height].Rgb;
+                    colors.Add(Color.FromArgb(imgColor.R, imgColor.G, imgColor.B));
+
+                    imgColor = img[1720 * width, 820 * height].Rgb;
+                    colors.Add(Color.FromArgb(imgColor.R, imgColor.G, imgColor.B));
                 }
-                p.WaitForExit();
-
-                dynamic jsonResult = JsonConvert.DeserializeObject(content);
-
-                string color0 = jsonResult["data"]["color0"];
-                var color = System.Drawing.ColorTranslator.FromHtml(color0);
-                colors.Add(color);
             }
 
             File.Delete(Path.Combine(outPath, "tmp.jpg"));
@@ -130,6 +132,5 @@ namespace TkRecordingConverter.util
 
             return outFile;
         }
-
     }
 }

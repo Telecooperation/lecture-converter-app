@@ -102,26 +102,29 @@ namespace ConverterCore.Recordings
                 // read metadata
                 var metadata = JsonConvert.DeserializeObject<Metadata>(File.ReadAllText(inputFilePath));
 
-                // add new lecture entry
-                var recordingItem = new Model.Recording()
+                if (metadata != null)
                 {
-                    Name = metadata.Description != null ? metadata.Description : recording.Name,
-                    Description = metadata.Description,
-                    Date = metadata.LectureDate != null ? metadata.LectureDate : File.GetLastWriteTime(inputFilePath),
-                    FileName = targetFolderName + "/" + recording.FileName,
-                    StageVideo = targetFolderName + "/" + recording.StageVideo,
-                    PresenterFileName = targetFolderName + "/" + recording.PresenterFileName,
-                    Processing = false,
-                    Slides = recording.Slides,
-                    Duration = recording.Duration
-                };
+                    // add new lecture entry
+                    var recordingItem = new Model.Recording()
+                    {
+                        Name = metadata.Description != null ? metadata.Description : recording.Name,
+                        Description = metadata.Description,
+                        Date = metadata.LectureDate != null ? metadata.LectureDate : File.GetLastWriteTime(inputFilePath),
+                        FileName = targetFolderName + "/" + recording.FileName,
+                        StageVideo = targetFolderName + "/" + recording.StageVideo,
+                        PresenterFileName = targetFolderName + "/" + recording.PresenterFileName,
+                        Processing = false,
+                        Slides = recording.Slides,
+                        Duration = recording.Duration
+                    };
 
-                foreach (var slide in recordingItem.Slides)
-                {
-                    slide.Thumbnail = targetFolderName + "/" + slide.Thumbnail;
+                    foreach (var slide in recordingItem.Slides)
+                    {
+                        slide.Thumbnail = targetFolderName + "/" + slide.Thumbnail;
+                    }
+
+                    File.WriteAllText(Path.Combine(targetFilePath, "meta.json"), JsonConvert.SerializeObject(recordingItem, Formatting.Indented));
                 }
-
-                File.WriteAllText(Path.Combine(targetFilePath, "meta.json"), JsonConvert.SerializeObject(recordingItem, Formatting.Indented));
 
                 _logger.LogInformation($"Finished transcoding {targetFileName}");
             }
