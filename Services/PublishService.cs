@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ConverterCore.Services
 {
@@ -24,20 +25,20 @@ namespace ConverterCore.Services
         public void RunPublishQueue()
         {
             // do scanning the folder every now and then
-            bgTask = new Timer(x => PublishCourses(), null, TimeSpan.Zero, TimeSpan.FromMinutes(5));
+            bgTask = new Timer(async x => await PublishCourses(), null, TimeSpan.Zero, TimeSpan.FromMinutes(5));
         }
 
-        public void PublishCourses()
+        public async Task PublishCourses()
         {
             var courses = Settings.Settings.LoadSettings();
 
             foreach (var course in courses.Courses)
             {
-                PublishCourse(course);
+                await PublishCourse(course);
             }
         }
 
-        public void PublishCourse(Course course)
+        public async Task PublishCourse(Course course)
         {
             try
             {
@@ -66,6 +67,9 @@ namespace ConverterCore.Services
                         var lecture = Lecture.LoadSettings(course);
                         lecture.Recordings.Add(recording);
                         Lecture.SaveSettings(lecture, course);
+
+                        // notify
+                        await Settings.Settings.PushMessage($"Published: {recording.Name}", $"{lecture.Name} Lecture \"{recording.Name}\" was published.");
                     }
                 }
             }
