@@ -12,7 +12,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace ConverterCore.Recordings
 {
@@ -42,13 +41,13 @@ namespace ConverterCore.Recordings
 
         public void RunConversionQueue()
         {
-            var th = new Thread(async () =>
+            var th = new Thread(() =>
             {
                 foreach (var queuedFile in processingQueue.GetConsumingEnumerable())
                 {
                     currentProcessing.Add(queuedFile);
 
-                    await ProcessFile(queuedFile);
+                    ProcessFile(queuedFile);
                 }
             });
             th.Start();
@@ -76,7 +75,7 @@ namespace ConverterCore.Recordings
             return false;
         }
 
-        private async Task ProcessFile(QueuedFile queuedFile)
+        private void ProcessFile(QueuedFile queuedFile)
         {
             // convert file?
             if (!ShouldConvert(queuedFile))
@@ -94,7 +93,6 @@ namespace ConverterCore.Recordings
 
                 // wait for file to finish copying
                 _logger.LogInformation($"Begin transcoding {targetFileName}...");
-                await Settings.Settings.PushMessage($"Begin transcoding: {targetFileName}", $"File \"{targetFileName}\" will be converted now.");
                 Thread.Sleep(1200);
 
                 var recording = ConvertService.ConvertStudioRecording(inputFilePath, targetFileName, targetFilePath);
@@ -128,7 +126,6 @@ namespace ConverterCore.Recordings
                 }
 
                 _logger.LogInformation($"Finished transcoding {targetFileName}");
-                await Settings.Settings.PushMessage($"Finished transcoding: {targetFileName}", $"File \"{targetFileName}\" finished convertion.");
             }
             else
             {

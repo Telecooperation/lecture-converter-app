@@ -15,7 +15,7 @@ namespace TkRecordingConverter.util
 {
     public class ChromaKeyParamGuesser
     {
-        public static int NrOfSamples = 5;
+        public static int NrOfSamples = 10;
 
         public string GuessChromaKeyParams(string videoFile)
         {
@@ -42,7 +42,7 @@ namespace TkRecordingConverter.util
 
         private List<Color> SampleColors(string videoFile)
         {
-            List<Color> colors = new List<Color>();
+            var result = new List<Color>();
 
             var outPath = Path.GetDirectoryName(videoFile);
             var len = GetMediaLength(videoFile);
@@ -62,6 +62,8 @@ namespace TkRecordingConverter.util
                 {
                     var height = img.Height / 1080;
                     var width = img.Width / 1920;
+
+                    var colors = new List<Color>();
 
                     var imgColor = img[400 * width, 400 * height].Rgb;
                     colors.Add(Color.FromArgb(imgColor.R, imgColor.G, imgColor.B));
@@ -86,12 +88,25 @@ namespace TkRecordingConverter.util
 
                     imgColor = img[1720 * width, 820 * height].Rgb;
                     colors.Add(Color.FromArgb(imgColor.R, imgColor.G, imgColor.B));
+
+                    // merge together
+                    float r = 0, g = 0, b = 0;
+
+                    foreach (var color in colors)
+                    {
+                        r += color.R * color.R;
+                        g += color.G * color.G;
+                        b += color.B * color.B;
+                    }
+
+                    result.Add(Color.FromArgb((int)Math.Sqrt(r / colors.Count),
+                        (int)Math.Sqrt(g / colors.Count), (int)Math.Sqrt(b / colors.Count)));
                 }
             }
 
             File.Delete(Path.Combine(outPath, "tmp.jpg"));
 
-            return colors;
+            return result;
         }
 
         private TimeSpan GetMediaLength(string path)
