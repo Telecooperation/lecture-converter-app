@@ -154,12 +154,14 @@ namespace ConverterCore.Studio
                     string thumbName = ExportThumbnail((float)nextKeyframe.GetValueOrDefault().TotalSeconds - 2.0f, Path.Combine(config.outputDir, finalRecording.FileName), thumbOutDir,
                         (currentId++).ToString());
 
-                    var process = FFmpegHelper.BuildProcess("tesseract", Path.Combine(thumbOutDir, thumbName) + " tmp", false);
+                    var tmpFileName = Path.GetRandomFileName();
+
+                    var process = FFmpegHelper.BuildProcess("tesseract", Path.Combine(thumbOutDir, thumbName) + " \"" + tmpFileName + "\"", false);
                     process.Start();
                     process.WaitForExit();
 
-                    var ocr = File.ReadAllText("tmp.txt");
-                    File.Delete("tmp.txt");
+                    var ocr = File.ReadAllText(tmpFileName);
+                    File.Delete(tmpFileName);
 
                     var slide = new Slide
                     {
@@ -200,9 +202,9 @@ namespace ConverterCore.Studio
 
             var args = "-y -ss " + timeInSeconds.ToString("0.00000", CultureInfo.InvariantCulture) +
                        " " +
-                       "-i " + clip + " " +
+                       "-i \"" + clip + "\" " +
                        "-vframes 1 " +
-                       Path.Combine(outPath, outFile);
+                       "\"" + Path.Combine(outPath, outFile) + "\"";
 
             Process p = FFmpegHelper.FFmpeg(args, false);
             p.Start();
@@ -213,7 +215,7 @@ namespace ConverterCore.Studio
 
         private TimeSpan GetMediaLength(string path)
         {
-            Process p = FFmpegHelper.FFmpeg("-i " + path);
+            Process p = FFmpegHelper.FFmpeg("-i \"" + path + "\"");
             p.Start();
             p.WaitForExit();
 
@@ -239,9 +241,9 @@ namespace ConverterCore.Studio
 
             var trimTHVideo = lenTHVideo - lenSlideVideo;
 
-            string args = "-i " + config.slideVideoPath + " " +
-                            "-i " + config.thVideoPath + " " +
-                            "-i " + config.recordingStyle.targetDimension.background + " " +
+            string args = "-i \"" + config.slideVideoPath + "\" " +
+                            "-i \"" + config.thVideoPath + "\" " +
+                            "-i \"" + config.recordingStyle.targetDimension.background + "\" " +
                             "-filter_complex " +
                             "\"" +
                             "[1:v]trim=start=" + trimTHVideo.TotalSeconds.ToString("0.00000", CultureInfo.InvariantCulture) + ",setpts=PTS-STARTPTS[1v];" +
@@ -270,9 +272,9 @@ namespace ConverterCore.Studio
                             "[2][slides_perspective]overlay=0:0[slides_with_background];" +
                             "[slides_with_background][th_ck_tr]overlay=0:0[stage]" +
                             "\" " +
-                            "-map \"[slides1]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -tune stillimage -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 " + Path.Combine(config.outputDir, "slides.mp4") + " " +
-                            "-map \"[th_ck_ct]\" -map \"[1a1]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 -acodec aac -b:a 192k " + Path.Combine(config.outputDir, "talkinghead.mp4") + " " +
-                            "-map \"[stage]\" -map \"[1a2]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 -acodec aac -b:a 192k " + Path.Combine(config.outputDir, "stage.mp4") + " ";
+                            "-map \"[slides1]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -tune stillimage -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 \"" + Path.Combine(config.outputDir, "slides.mp4") + "\" " +
+                            "-map \"[th_ck_ct]\" -map \"[1a1]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 -acodec aac -b:a 192k \"" + Path.Combine(config.outputDir, "talkinghead.mp4") + "\" " +
+                            "-map \"[stage]\" -map \"[1a2]\" -f mp4 -vcodec libx264 -crf 23 -preset veryfast -profile:v baseline -level 3.0 -pix_fmt yuv420p -r 30 -acodec aac -b:a 192k \"" + Path.Combine(config.outputDir, "stage.mp4") + "\" ";
 
             Console.WriteLine(args);
 

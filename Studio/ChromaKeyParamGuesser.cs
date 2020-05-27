@@ -55,10 +55,11 @@ namespace TkRecordingConverter.util
                 currentTime += stepSize;
 
                 // create thumbnail
-                ExportThumbnail((float)currentTime, videoFile, outPath, "tmp");
+                var tmpFileName = Path.GetRandomFileName();
+                ExportThumbnail((float)currentTime, videoFile, outPath, tmpFileName);
 
                 // pick colors
-                using (var img = SixLabors.ImageSharp.Image.Load<Rgba32>(Path.Combine(outPath, "tmp.jpg")))
+                using (var img = SixLabors.ImageSharp.Image.Load<Rgba32>(Path.Combine(outPath, tmpFileName + ".jpg")))
                 {
                     var height = img.Height / 1080;
                     var width = img.Width / 1920;
@@ -102,16 +103,16 @@ namespace TkRecordingConverter.util
                     result.Add(Color.FromArgb((int)Math.Sqrt(r / colors.Count),
                         (int)Math.Sqrt(g / colors.Count), (int)Math.Sqrt(b / colors.Count)));
                 }
-            }
 
-            File.Delete(Path.Combine(outPath, "tmp.jpg"));
+                File.Delete(Path.Combine(outPath, tmpFileName + ".jpg"));
+            }
 
             return result;
         }
 
         private TimeSpan GetMediaLength(string path)
         {
-            Process p = FFmpegHelper.FFmpeg("-i " + path);
+            Process p = FFmpegHelper.FFmpeg("-i \"" + path + "\"");
             p.Start();
             p.WaitForExit();
 
@@ -137,9 +138,9 @@ namespace TkRecordingConverter.util
 
             var args = "-y -ss " + timeInSeconds.ToString("0.00000", CultureInfo.InvariantCulture) +
                        " " +
-                       "-i " + clip + " " +
+                       "-i \"" + clip + "\" " +
                        "-vframes 1 " +
-                       Path.Combine(outPath, outFile);
+                       "\"" + Path.Combine(outPath, outFile) + "\"";
 
             Process p = FFmpegHelper.FFmpeg(args, false);
             p.Start();
