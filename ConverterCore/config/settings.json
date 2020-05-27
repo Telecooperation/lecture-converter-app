@@ -1,0 +1,12 @@
+﻿{
+  "Courses": [
+    {
+      "Id": "cnuvs_ss20",
+      "Name": "Computer Netzwerke und verteilte Systeme",
+      "SourceFolder": "C:\\Users\\alexander.seeliger\\Documents\\Git\\lecture-converter-app\\ConverterCore\\bin\\Source",
+      "ConvertFolder": "C:\\Users\\alexander.seeliger\\Documents\\Git\\lecture-converter-app\\ConverterCore\\bin\\Convert",
+      "TargetFolder": "C:\\Users\\alexander.seeliger\\Documents\\Git\\lecture-converter-app\\ConverterCore\\bin\\Target",
+      "Studio": true
+    }
+  ]
+}
