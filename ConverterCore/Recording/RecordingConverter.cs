@@ -3,9 +3,11 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ConverterCore.Recordings
 {
@@ -13,7 +15,7 @@ namespace ConverterCore.Recordings
     {
         private readonly ILogger<RecordingConverter> _logger;
         private readonly MediaProcessor mediaProcessor;
-        private BlockingCollection<MediaMetaData> processingQueue = new BlockingCollection<MediaMetaData>();
+        private BlockingCollection<MediaMetaData> processingQueue = new BlockingCollection<MediaMetaData>(new ConcurrentQueue<MediaMetaData>());
         private List<MediaMetaData> currentProcessing = new List<MediaMetaData>();
 
         public RecordingConverter(ILogger<RecordingConverter> logger,
@@ -35,13 +37,19 @@ namespace ConverterCore.Recordings
         {
             var th = new Thread(() =>
             {
-                foreach (var queuedFile in processingQueue.GetConsumingEnumerable())
+                Action action = () =>
                 {
-                    currentProcessing.Add(queuedFile);
+                    while (true)
+                    {
+                        var queuedFile = processingQueue.Take();
+                        ProcessFile(queuedFile);
+                    }
+                };
 
-                    ProcessFile(queuedFile);
-                }
+
+                Parallel.Invoke(action, action);
             });
+
             th.Start();
         }
 
@@ -67,7 +75,7 @@ namespace ConverterCore.Recordings
             return false;
         }
 
-        private void ProcessFile(MediaMetaData queuedFile)
+        public void ProcessFile(MediaMetaData queuedFile)
         {
             // convert file?
             if (!ShouldConvert(queuedFile))

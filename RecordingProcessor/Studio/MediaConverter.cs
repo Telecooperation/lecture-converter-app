@@ -154,14 +154,14 @@ namespace RecordingProcessor.Studio
                     string thumbName = FFmpegHelper.ExportThumbnail((float)nextKeyframe.GetValueOrDefault().TotalSeconds - 2.0f, Path.Combine(config.OutputDirectory, finalRecording.FileName), thumbOutDir,
                         (currentId++).ToString());
 
-                    var tmpFileName = Path.GetRandomFileName();
+                    var tmpFileName = Path.Combine(thumbOutDir, Path.GetRandomFileName());
 
                     var process = FFmpegHelper.BuildProcess("tesseract", Path.Combine(thumbOutDir, thumbName) + " \"" + tmpFileName + "\"", false);
                     process.Start();
                     process.WaitForExit();
 
-                    var ocr = File.ReadAllText(tmpFileName);
-                    File.Delete(tmpFileName);
+                    var ocr = File.ReadAllText(tmpFileName + ".txt");
+                    File.Delete(tmpFileName + ".txt");
 
                     var slide = new Slide
                     {

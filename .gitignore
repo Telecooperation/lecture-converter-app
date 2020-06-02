@@ -4,3 +4,4 @@ obj/
 /packages
 /out
 /output/Release/netcoreapp2.2/publish
+/ConverterCore/output/Release/netcoreapp2.2/publish
