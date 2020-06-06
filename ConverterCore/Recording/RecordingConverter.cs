@@ -41,8 +41,15 @@ namespace ConverterCore.Recordings
                 {
                     while (true)
                     {
-                        var queuedFile = processingQueue.Take();
-                        ProcessFile(queuedFile);
+                        try
+                        {
+                            var queuedFile = processingQueue.Take();
+                            ProcessFile(queuedFile);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex.Message, ex);
+                        }
                     }
                 };
 
